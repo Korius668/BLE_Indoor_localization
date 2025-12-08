@@ -2,7 +2,8 @@ import math
 import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
-from pomiar1_pozycje import df_positions
+
+from pomiar1.pozycje import df_positions
 from mapa_nadajniki import df_transmitters
 
 def calculate_euclidean_distance(x1, y1, x2, y2):
@@ -22,10 +23,12 @@ id_mapping = {
     ' 07:00:00:00:00:00': '7',
     ' 08:00:00:00:00:00': '8',
     ' 09:00:00:00:00:00': '9',
-    ' 00:00:00:00:00:10': '10',
+    ' 00:00:00:00:00:10': '10', 
     ' 00:00:00:00:00:11': '11',
     ' 00:00:00:00:00:12': '12'
 }
+transmitter_order = list(id_mapping.values())
+
 
 def read_pomiar1_data(pozycjePomiaru1_paths= pozycjePomiaru1_paths, df_transmitters = df_transmitters):
     dfs = {}
@@ -57,17 +60,16 @@ def read_pomiar1_data(pozycjePomiaru1_paths= pozycjePomiaru1_paths, df_transmitt
         dfs[f'{i+1}'] = df_temp
     return dfs
 
-def calc_boxplot_data(id_mapping=id_mapping, pozycjePomiaru1_paths=pozycjePomiaru1_paths, df_positions=df_positions, df_transmitters=df_transmitters):
-        
-    dfs = read_pomiar1_data(pozycjePomiaru1_paths,df_transmitters)
+dfs = read_pomiar1_data(pozycjePomiaru1_paths, df_transmitters)
 
-    transmitter_order = list(id_mapping.values())
+
+def calc_boxplot_data(transmitter_order=transmitter_order, dfs=dfs):    
     calc_data = {}
 
     for measurement_name, df_measurement in dfs.items():
         
         boxplot_data = []
-        counts_dict = {}
+        
         max_moc_sygnalu = df_measurement['znormalizowana moc sygnalu'].max() if not df_measurement.empty else 0
         min_moc_sygnalu = df_measurement['znormalizowana moc sygnalu'].min() if not df_measurement.empty else 0
     # max_moc_sygnalu = df_measurement['moc sygnalu'].max() if not df_measurement.empty else 0
@@ -77,7 +79,7 @@ def calc_boxplot_data(id_mapping=id_mapping, pozycjePomiaru1_paths=pozycjePomiar
             # subset = df_measurement[df_measurement['id nadajnika'] == tx_id]['moc sygnalu']
             subset = df_measurement[df_measurement['id nadajnika'] == tx_id]['znormalizowana moc sygnalu']
             subset_dist = df_measurement[df_measurement['id nadajnika'] == tx_id][['znormalizowana moc sygnalu','distance']]
-            counts_dict[tx_id] = len(subset)
+            
 
             if not subset.empty:
                 q1 = subset.quantile(0.25)
@@ -122,39 +124,48 @@ def calc_boxplot_data(id_mapping=id_mapping, pozycjePomiaru1_paths=pozycjePomiar
 
         calc_data[int(measurement_name)] = boxplot_data
         positions = np.arange(1, len(transmitter_order) + 1)
-    return calc_data, dfs, transmitter_order, positions, counts_dict, max_moc_sygnalu
+    return calc_data, transmitter_order, positions
+
+calc_data, transmitter_order, positions = calc_boxplot_data(transmitter_order=transmitter_order, dfs=dfs)
+
+def plot_boxplots(calc_data, dfs, transmitter_order, positions):  
+    for measurement_name, df_measurement in dfs.items():
+        fig = {}
+        fig[measurement_name] = plt.figure(figsize=(10, 6))
+        ax = plt.gca()
+    
+        ax.bxp(calc_data[int(measurement_name)], positions=positions, showfliers=True)
+        ax.yaxis.grid(True, linestyle='-', which='major', color='gray', alpha=1)
+        ax.set_axisbelow(True)
+
+        fig[measurement_name].patch.set_edgecolor('black')
+        fig[measurement_name].patch.set_linewidth(1)
+
+        plt.title(f'Boxplot of Signal Strength by Transmitter ID for {measurement_name} (Position: x = {df_measurement["x"].iloc[0] if not df_measurement.empty else "N/A"}, y = {df_measurement["y"].iloc[0] if not df_measurement.empty else "N/A"})')
+        plt.xlabel('ID nadajnika', labelpad=30) 
+
+        ax.set_xticks(positions)
+        ax.set_xticklabels(transmitter_order, rotation=0, ha='center')
+
+        total_count = 0
+        for i, tx_id in enumerate(transmitter_order):
+            count = calc_data[int(measurement_name)][int(tx_id)-1]['count']
+            if np.isnan(count):
+                count = 0
+            total_count+=count
+            ax.text(i + 1, -92, f'n={count}', ha='center', va='top', color='black') 
+
+        plt.ylabel('Moc sygnału')
+
+        
+
+        plt.text(len(transmitter_order), -97, f'Total samples: {total_count}', ha='right')
+        plt.tight_layout()
+        plt.ylim(-100, -40)
+        plt.savefig(f"obrazy/boxplot_rssi_pozycja_{measurement_name}.png")
+    return fig
 
 if __name__ == "__main__":
-    calc_data, dfs, transmitter_order, positions, counts_dict, max_moc_sygnalu = calc_boxplot_data()
-    fig = {}
-    for measurement_name, df_measurement in dfs.items():
-        fig[measurement_name] = plt.figure(figsize=(12, 6))
-        ax = plt.gca()
-        for tx_id in transmitter_order:
-        
-            ax.bxp(calc_data[int(measurement_name)], positions=positions, showfliers=True)
-            ax.yaxis.grid(True, linestyle='-', which='major', color='gray', alpha=1)
-            ax.set_axisbelow(True)
-
-            fig[measurement_name].patch.set_edgecolor('black')
-            fig[measurement_name].patch.set_linewidth(1)
-
-            plt.title(f'Boxplot of Signal Strength by Transmitter ID for {measurement_name} (Position: x = {df_measurement["x"].iloc[0] if not df_measurement.empty else "N/A"}, y = {df_measurement["y"].iloc[0] if not df_measurement.empty else "N/A"})')
-            plt.xlabel('ID nadajnika', labelpad=30) 
-
-            ax.set_xticks(positions)
-            ax.set_xticklabels(transmitter_order, rotation=0, ha='center')
-
-            y_text_position = ax.get_ylim()[0] - (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.08 
-            for i, tx_id in enumerate(transmitter_order):
-                count = counts_dict.get(tx_id, 0)
-                ax.text(i + 1, y_text_position, f'n={int(count)}', ha='center', va='top', color='black') 
-
-            plt.ylabel('Moc sygnału')
-
-            total_count = len(df_measurement)
-
-            plt.text(len(transmitter_order), max_moc_sygnalu + 5, f'Total samples: {total_count}', ha='right')
-            plt.tight_layout()
-
+    fig = plot_boxplots(calc_data, dfs, transmitter_order, positions)
+    
     plt.show()
