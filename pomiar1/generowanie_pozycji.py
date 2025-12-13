@@ -7,20 +7,19 @@ from pomiar1.boxplot import calc_data, transmitter_order, dfs
 
 
 
-N_SAMPLES = 10000
+n_samples = 10000
 Sigma = 7
 
-def generate_samples():
+def generate_samples(n_samples = n_samples):
     samples = {}
     for i, d in calc_data.items():
         s={}
         for b in d:
-
             if (not np.isnan(b['avg'])):
                 AVG = b['avg']
                 # STD = b['std']
 
-                s[b["label"]] = np.random.normal(loc=AVG, scale=Sigma, size=N_SAMPLES)
+                s[b["label"]] = np.random.normal(loc=AVG, scale=Sigma, size=n_samples)
 
         samples[i] = s
     return samples
@@ -37,8 +36,7 @@ if __name__ == "__main__":
 
     for measurement_name, s_data in samples.items():
 
-        current_df_measurement = dfs[str(measurement_name)]
-
+        current_df_measurement = dfs[measurement_name]
 
         pos_x = current_df_measurement['x'].iloc[0] if not current_df_measurement.empty else "N/A"
         pos_y = current_df_measurement['y'].iloc[0] if not current_df_measurement.empty else "N/A"
@@ -77,8 +75,8 @@ if __name__ == "__main__":
                     pdf = norm.pdf(x_range, AVG, STD)
                     bin_width = (global_max_signal - global_min_signal)/10000
                     scaled_pdf = pdf * len(vals) * bin_width
-                    ax.plot(x_range, scaled_pdf, label=f'Nadajnik {tx_id} avg = {AVG:.0f}', color=transmitter_colors[tx_id], linestyle='-', linewidth=2)
-                    ax.axvline(AVG, 0,color=transmitter_colors[tx_id], linewidth=1.5,  linestyle=':', label=f'Nadajnik {tx_id} avg = {AVG:.0f}')
+                    ax.plot(x_range, scaled_pdf, label=f'Nadajnik {tx_id}', color=transmitter_colors[tx_id], linestyle='-', linewidth=2)
+                    ax.axvline(AVG, 0,color=transmitter_colors[tx_id], linewidth=1.5,  linestyle=':', label=f'avg = {AVG:.0f}')
                 elif STD == 0 and len(vals) > 0: # If std_val is 0 but there are samples, plot a vertical line for the mean
                     ax.axvline(x=AVG, color=transmitter_colors[tx_id], linestyle=':', linewidth=1.5)
         handles, labels = ax.get_legend_handles_labels()

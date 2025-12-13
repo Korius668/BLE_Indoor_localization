@@ -60,7 +60,7 @@ Odległość od punktu `(x, y)` do beacona o współrzędnych `(x_i, y_i)` wyra�
 
 
 \[
-d_i^{true} = \sqrt{(x - x_i)^2 + (y - y_i)^2}
+d_i = \sqrt{(x - x_i)^2 + (y - y_i)^2}
 \]
 
 
@@ -71,7 +71,7 @@ Residuła dla każdego beacona to różnica pomiędzy obliczoną odległością 
 
 
 \[
-r_i = d_i^{true} - d_i^{measured}
+r_i = d_i - d(s_i)
 \]
 
 
@@ -82,15 +82,22 @@ Metoda najmniejszych kwadratów minimalizuje sumę kwadratów residuów:
 
 
 \[
-F(x, y) = \sum_{i=1}^{N} \left( \sqrt{(x - x_i)^2 + (y - y_i)^2} - d_i^{measured} \right)^2
+F(x, y) = \sum_{i=1}^{N} \left( \sqrt{(x - x_i)^2 + (y - y_i)^2} - d(s_i) \right)^2
 \]
-
-
 
 gdzie:
 - \( (x, y) \) – szukana pozycja,
 - \( (x_i, y_i) \) – współrzędne beaconów,
 - \( d_i^{measured} \) – zmierzona odległość do beacona.
+
+#### Własna wersja
+
+\[
+F(x, y) = \sum_{i=1}^{N} \frac{| d_i - d(s_i) |}{d(s_i)}
+\]
+Zamiana kwadratu residuów bierzemy ich wartość absolutną.Zwiększa to rozdzielczość.
+
+Podzielenie przez odległość sprawia, że residua dużych odległości są uważane za mniej istotne, dlatego są mniej redukowane, a algorytm zbliża się bardziej do nadajników z mocniejszą mocą sygnału.
 
 #### Działanie algorytmu
 1. **Start** od początkowego przybliżenia `initial_guess`.
@@ -98,24 +105,23 @@ gdzie:
 3. **Minimalizacja** sumy kwadratów residuów przy użyciu `least_squares`.
 4. **Wynik** – najlepsze przybliżenie pozycji `(x, y)`, które najbardziej pasuje do zmierzonych odległości.
 
-# Algorytm estymacji pozycji urządzenia
+# Algorytm least squares
 
 ```mermaid
 flowchart TD
 
-    %% --- Przygotowanie danych ---
-    A[Pomiar mocy sygnału dla każdego nadajnika] --> B[Wyliczenie średniej mocy sygnału]
-    B --> C[Generowanie populacji mocy sygnału z rozkładu normalnego]
-    C --> D[Przeliczenie mocy na odległość przy użyciu regresji liniowej]
-    D --> E[Zestaw odległości do beaconów]
-
-    %% --- Least Squares ---
-    E --> F[Start od initial_guess]
-    F --> G[Obliczenie residuów dla wszystkich beaconów]
-    G --> H[Minimalizacja sumy kwadratów residuów - least squares]
-    H --> I[Wynik: najlepsze przybliżenie pozycji x,y]
-
+    A[\Pomiar mocy sygnałów nadajników w jednej pozycji/] --> B[Wyliczenie średniej mocy sygnału dla każdego z nadajników]
+    B -.-> C[\Generowanie populacji mocy sygnału z rozkładu normalnego/]
+    
+    F[Losowanie pozycji początkowej] --> G
+    C --> H[Obliczanie odległości z mocy sygnału przy pomocy regresji liniowej]
+    E[Pozycje beaconów]--> G[Obliczenie odległości do każdego z beaconów]
+    H--> J[Obliczenie residuów]
+    G-->J
+    J -->K[Minimalizacja sumy kwadratów residuów]
+    K --> M[Wynik: najlepsze przybliżenie pozycji x,y]
 ```
+
 ![Least Squares - Estymacja pozycji - 1](obrazy/least_squares_estymacja_pozycji_1.png)
 ![Least Squares - Estymacja pozycji - 2](obrazy/least_squares_estymacja_pozycji_2.png)
 ![Least Squares - Estymacja pozycji - 3](obrazy/least_squares_estymacja_pozycji_3.png)

@@ -13,7 +13,7 @@ def plot_signal_strength_map(measurement_name, df_measurement, ax=None, fig=None
     transmitter_stats = transmitter_stats.rename(columns={'mean': 'average_signal_strength', 'count': 'sample_count'})
 
     if not df_measurement.empty:
-        ax.scatter(df_measurement['x'].iloc[0], df_measurement['y'].iloc[0], color='red', s=100, marker='o', label='Current Position')
+        ax.scatter(df_measurement['x'].iloc[0], df_measurement['y'].iloc[0], color='red', s=100, marker='o', label='Prawdziwa pozycja')
 
     for index, tx_row in transmitter_stats.iterrows():
         tx_id = tx_row['id nadajnika']
@@ -27,23 +27,23 @@ def plot_signal_strength_map(measurement_name, df_measurement, ax=None, fig=None
             tx_y = transmitter_coords['y']
 
             marker_size = sample_count + 50 if sample_count > 50 else 100
-            ax.scatter(tx_x, tx_y, c=avg_signal, s=marker_size, cmap='viridis', edgecolors='black', linewidth=0.5, vmin=-100, vmax=-40) # Removed label here to add it via a proxy artist later
+            ax.scatter(tx_x, tx_y, c=avg_signal, s=marker_size, cmap='Greens', edgecolors='black', linewidth=0.5, vmin=-100, vmax=-40) # Removed label here to add it via a proxy artist later
             ax.text(tx_x, tx_y, sample_count, color='black', fontsize=8, ha='center', va='center')
         else:
             print(f"Warning: Transmitter ID {tx_id} not found in df_transmitters.")
         
     if len(ax.collections) > 1:
         cbar = fig.colorbar(ax.collections[1], ax=ax)
-        cbar.set_label('Average Signal Strength (dBm)')
+        cbar.set_label('Srednia moc sygnału (dBm)')
 
     representative_size = transmitter_stats['sample_count'].median() * 0.5 if not transmitter_stats.empty else 50
     proxy_transmitter = ax.scatter([], [], color='green', s=representative_size, label=f'Transmitters (size ~ sample count)')
 
     handles, labels = ax.get_legend_handles_labels()
 
-    if f'Transmitters (size ~ sample count)' not in labels:
+    if f'Nadajniki (rozmiar ~ liczba probek)' not in labels:
         handles.append(proxy_transmitter)
-        labels.append(f'Transmitters (size ~ sample count)')
+        labels.append(f'Nadajniki (rozmiar ~ liczba probek)')
 
     ax.legend(handles, labels, loc='upper right')
 

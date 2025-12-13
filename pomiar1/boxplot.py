@@ -57,7 +57,7 @@ def read_pomiar1_data(pozycjePomiaru1_paths= pozycjePomiaru1_paths, df_transmitt
 
         df_temp = df_temp_merged.drop(columns=['Id', 'x_tx', 'y_tx', 'id_nadajnika_int'])
 
-        dfs[f'{i+1}'] = df_temp
+        dfs[i+1] = df_temp
     return dfs
 
 dfs = read_pomiar1_data(pozycjePomiaru1_paths, df_transmitters)
@@ -70,8 +70,8 @@ def calc_boxplot_data(transmitter_order=transmitter_order, dfs=dfs):
         
         boxplot_data = []
         
-        max_moc_sygnalu = df_measurement['znormalizowana moc sygnalu'].max() if not df_measurement.empty else 0
-        min_moc_sygnalu = df_measurement['znormalizowana moc sygnalu'].min() if not df_measurement.empty else 0
+        # max_moc_sygnalu = df_measurement['znormalizowana moc sygnalu'].max() if not df_measurement.empty else 0
+        # min_moc_sygnalu = df_measurement['znormalizowana moc sygnalu'].min() if not df_measurement.empty else 0
     # max_moc_sygnalu = df_measurement['moc sygnalu'].max() if not df_measurement.empty else 0
     # min_moc_sygnalu = df_measurement['moc sygnalu'].min() if not df_measurement.empty else 0
 
@@ -122,7 +122,7 @@ def calc_boxplot_data(transmitter_order=transmitter_order, dfs=dfs):
                     'label': tx_id
                 })
 
-        calc_data[int(measurement_name)] = boxplot_data
+        calc_data[measurement_name] = boxplot_data
         positions = np.arange(1, len(transmitter_order) + 1)
     return calc_data, transmitter_order, positions
 
