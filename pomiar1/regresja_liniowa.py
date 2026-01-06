@@ -30,17 +30,35 @@ def calculate_distance_from_rssi(signal_strength, model=model):
 if __name__ == "__main__":
     
     plt.figure(figsize=(10, 6))   
-    plt.scatter(X_log, df_regression_data['znormalizowana moc sygnalu'], color='blue', label='Data Points')
+    plt.scatter(X_log, df_regression_data['znormalizowana moc sygnalu'], color='blue', label='Dane pomiarowe')
 
     distance_range = np.linspace(X_log.min(),X_log.max(), 100).reshape(-1, 1)
     predicted_med = model.predict(distance_range)
 
-    plt.plot(distance_range, predicted_med, color='red', label='Linear Regression Fit')
+    plt.plot(distance_range, predicted_med, color='red', label='Regesja liniowa')
 
-    plt.xlabel('Log10 distance ')
-    plt.ylabel('Signal Strength (dBm)')
-    plt.title('Signal Strength vs. Distance with Linear Regression Fit')
+    plt.xlabel('Log10 dystans od nadajnika (m)')
+    plt.ylabel('Moc sygnału (dBm)')
+    plt.title('Wykres regresji liniowej: Moc sygnału vs Log10 dystans')
 
     plt.legend()
     plt.savefig("obrazy/regresja_liniowa.png")
+    plt.show()
+    
+    plt.figure(figsize=(10, 6))   
+    distance_linear = np.power(10, X_log)
+    plt.scatter(distance_linear, df_regression_data['znormalizowana moc sygnalu'], color='blue', label='Dane pomiarowe')
+
+    distance_range_linear = np.linspace(distance_linear.min(), distance_linear.max(), 100)
+    log_distance_range = np.log10(distance_range_linear).reshape(-1, 1)
+    predicted_linear = model.predict(log_distance_range)
+
+    plt.plot(distance_range_linear, predicted_linear, color='red', label='Regesja liniowa')
+
+    plt.xlabel('Dystans od nadajnika (m)')
+    plt.ylabel('Moc sygnału (dBm)')
+    plt.title('Wykres regresji liniowej: Moc sygnału vs dystans')
+
+    plt.legend()
+    plt.savefig("obrazy/regresja_liniowa2.png")
     plt.show()

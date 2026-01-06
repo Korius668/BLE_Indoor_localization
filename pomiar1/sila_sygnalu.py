@@ -37,13 +37,14 @@ def plot_signal_strength_map(measurement_name, df_measurement, ax=None, fig=None
         cbar.set_label('Srednia moc sygnału (dBm)')
 
     representative_size = transmitter_stats['sample_count'].median() * 0.5 if not transmitter_stats.empty else 50
-    proxy_transmitter = ax.scatter([], [], color='green', s=representative_size, label=f'Transmitters (size ~ sample count)')
+    label = 'Nadajniki (rozmiar ~ liczba probek)'
+    proxy_transmitter = ax.scatter([], [], color='green', s=representative_size, label=label)
 
     handles, labels = ax.get_legend_handles_labels()
 
-    if f'Nadajniki (rozmiar ~ liczba probek)' not in labels:
+    if label not in labels:
         handles.append(proxy_transmitter)
-        labels.append(f'Nadajniki (rozmiar ~ liczba probek)')
+        labels.append(label)
 
     ax.legend(handles, labels, loc='upper right')
 
@@ -70,7 +71,7 @@ def plot_signal_strength_maps():
     for measurement_name, df_measurement in dfs.items():
         fig[measurement_name] = plt.figure(figsize=(4, 6))
         ax = plot_signal_strength_map(measurement_name, df_measurement, fig=fig[measurement_name])
-        plt.savefig(f"obrazy/mapa_rssi_nadajnik_{measurement_name}.png")
+        plt.savefig(f"obrazy/mapa_rssi_pozycja_{measurement_name}.png")
     return ax
     
 if __name__ == "__main__":

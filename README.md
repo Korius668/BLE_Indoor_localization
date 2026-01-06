@@ -17,42 +17,29 @@
 ![Boxploty RSSI - Pozycja 11](obrazy/boxplot_rssi_pozycja_11.png)
 
 ## Mapa z siłą sygnału (RSSI)
-![Mapa RSSI - Nadajnik 1](obrazy/mapa_rssi_nadajnik_1.png)
-![Mapa RSSI - Nadajnik 2](obrazy/mapa_rssi_nadajnik_2.png)
-![Mapa RSSI - Nadajnik 3](obrazy/mapa_rssi_nadajnik_3.png)
-![Mapa RSSI - Nadajnik 4](obrazy/mapa_rssi_nadajnik_4.png)
-![Mapa RSSI - Nadajnik 5](obrazy/mapa_rssi_nadajnik_5.png)
-![Mapa RSSI - Nadajnik 6](obrazy/mapa_rssi_nadajnik_6.png)
-![Mapa RSSI - Nadajnik 7](obrazy/mapa_rssi_nadajnik_7.png)
-![Mapa RSSI - Nadajnik 8](obrazy/mapa_rssi_nadajnik_8.png)
-![Mapa RSSI - Nadajnik 9](obrazy/mapa_rssi_nadajnik_9.png)
-![Mapa RSSI - Nadajnik 10](obrazy/mapa_rssi_nadajnik_10.png)
-![Mapa RSSI - Nadajnik 11](obrazy/mapa_rssi_nadajnik_11.png)
-![Mapa RSSI - Nadajnik 12](obrazy/mapa_rssi_nadajnik_12.png)
-## Regresja Liniowa
-![Regresja Liniowa](obrazy/regresja_liniowa.png)
-## Rozrzut wygenowanych próbek odległości
-![Rozrzut wygenowanych próbek odległości - pozycji 1](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_1.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 2](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_2.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 3](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_3.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 4](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_4.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 5](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_5.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 6](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_6.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 7](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_7.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 8](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_8.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 9](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_9.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 10](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_10.png)
-![Rozrzut wygenowanych próbek odległości - pozycji 11](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_11.png)
-
-## Least Squares - Estymacja pozycji
-Z pomiarów, dla każdego z nadajników w każdej pozycji pomiarowej, wyliczono średnią moc sygnału. Wokół tej wartości wygenerowano z rozkładu normalnego, populację nowych mocy sygnału. Następnie przy użyciu znanego wzoru z regresji liniowej wyliczono jaka odległość odpowiada tej mocy dla tego nadajnika. Wartości tych odległości następnie użyto w algorytmie najmniejszych kwadratów w celu estymacji pozycji urządzenia pomiarowego. Poniżej przedstawiono wyniki estymacji pozycji dla każdej z 11 pozycji pomiarowych.
+![Mapa RSSI - Pozycja 1](obrazy/mapa_rssi_pozycja_1.png)
+![Mapa RSSI - Pozycja 2](obrazy/mapa_rssi_pozycja_2.png)
+![Mapa RSSI - Pozycja 3](obrazy/mapa_rssi_pozycja_3.png)
+![Mapa RSSI - Pozycja 4](obrazy/mapa_rssi_pozycja_4.png)
+![Mapa RSSI - Pozycja 5](obrazy/mapa_rssi_pozycja_5.png)
+![Mapa RSSI - Pozycja 6](obrazy/mapa_rssi_pozycja_6.png)
+![Mapa RSSI - Pozycja 7](obrazy/mapa_rssi_pozycja_7.png)
+![Mapa RSSI - Pozycja 8](obrazy/mapa_rssi_pozycja_8.png)
+![Mapa RSSI - Pozycja 9](obrazy/mapa_rssi_pozycja_9.png)
+![Mapa RSSI - Pozycja 10](obrazy/mapa_rssi_pozycja_10.png)
+![Mapa RSSI - Pozycja 11](obrazy/mapa_rssi_pozycja_11.png)
 
 
 ### Algorytm minimalizacji metodą najmniejszych kwadratów
 
+Z pomiarów, dla każdego z nadajników w każdej pozycji pomiarowej, wyliczono średnią moc sygnału.
+Następnie wokół tej wartości nawygenerowano z rozkładu normalnego, populację nowych mocy sygnałów.
+Kolejno przy użyciu zależności wyznaczonej wczesniej z regresji liniowej,wyliczono odległość między  odpowiada tej mocy dla tego nadajnika. Wartości tych odległości następnie użyto w algorytmie najmniejszych kwadratów w celu estymacji pozycji urządzenia pomiarowego. Poniżej przedstawiono wyniki estymacji pozycji dla każdej z 11 pozycji pomiarowych.
+
+
 Algorytm wykorzystuje funkcję `calculate_residuals`, która oblicza różnicę pomiędzy:
 - **rzeczywistymi odległościami** od punktu estymowanego `(x, y)` do beaconów,
-- a **wyliczonymi odległościami z rssi** (`distances`).
+a **wyliczonymi odległościami z rssi** (`distances`).
 
 #### Wzór na odległość
 Odległość od punktu `(x, y)` do beacona o współrzędnych `(x_i, y_i)` wyrażona jest wzorem euklidesowym:
@@ -65,8 +52,8 @@ d_i = \sqrt{(x - x_i)^2 + (y - y_i)^2}
 
 
 
-#### Residuła (różnica)
-Residuła dla każdego beacona to różnica pomiędzy obliczoną odległością a zmierzoną:
+#### Różnica
+Różnica pomiędzy obliczoną odległością z wyznaczonego punktu, a tą zmierzoną z mocy:
 
 
 
@@ -99,6 +86,14 @@ Zamiana kwadratu residuów bierzemy ich wartość absolutną.Zwiększa to rozdzi
 
 Podzielenie przez odległość sprawia, że residua dużych odległości są uważane za mniej istotne, dlatego są mniej redukowane, a algorytm zbliża się bardziej do nadajników z mocniejszą mocą sygnału.
 
+### Regresja Liniowa
+Aby wyznaczyć zależność między mocą sygnalu (RSSI) a odległością od nadajnika, przeprowadzono regresję liniową na podstawie zebranych danych pomiarowych. Poniższy wykres przedstawia wyniki regresji liniowej, gdzie oś X odpowiada logarytmowi odległości od nadajnika, a oś Y reprezentuje moc sygnału (RSSI w dBm).
+![Regresja Liniowa](obrazy/regresja_liniowa.png)
+Ten sam wykres ale z osią X w skali liniowej.
+![Regresja Liniowa](obrazy/regresja_liniowa2.png)
+
+
+
 #### Działanie algorytmu
 1. **Start** od początkowego przybliżenia `initial_guess`.
 2. **Obliczenie residuów** dla wszystkich beaconów.
@@ -121,6 +116,24 @@ flowchart TD
     J -->K[Minimalizacja sumy kwadratów residuów]
     K --> M[Wynik: najlepsze przybliżenie pozycji x,y]
 ```
+
+
+## Metoda monte carlo do wyznaczenia odległości
+
+W celu oszacowania odległości od nadajników na podstawie zmierzonych wartości mocy sygnału (RSSI), zastosowano metodę Monte Carlo. Dla każdej z 11 pozycji pomiarowych, wygenerowano 1000 próbek mocy sygnału z rozkładu normalnego, wykorzystując średnią i odchylenie standardowe zmierzonych wartości RSSI. Następnie, korzystając z wcześniej wyznaczonej regresji liniowej, przeliczono każdą z wygenerowanych próbek mocy sygnału na odpowiadającą jej odległość od nadajnika.
+
+
+![Rozrzut wygenowanych próbek odległości - pozycji 1](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_1.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 2](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_2.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 3](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_3.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 4](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_4.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 5](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_5.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 6](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_6.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 7](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_7.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 8](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_8.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 9](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_9.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 10](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_10.png)
+![Rozrzut wygenowanych próbek odległości - pozycji 11](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_11.png)
 
 ![Least Squares - Estymacja pozycji - 1](obrazy/least_squares_estymacja_pozycji_1.png)
 ![Least Squares - Estymacja pozycji - 2](obrazy/least_squares_estymacja_pozycji_2.png)

@@ -141,8 +141,8 @@ def plot_boxplots(calc_data, dfs, transmitter_order, positions):
         fig[measurement_name].patch.set_edgecolor('black')
         fig[measurement_name].patch.set_linewidth(1)
 
-        plt.title(f'Boxplot of Signal Strength by Transmitter ID for {measurement_name} (Position: x = {df_measurement["x"].iloc[0] if not df_measurement.empty else "N/A"}, y = {df_measurement["y"].iloc[0] if not df_measurement.empty else "N/A"})')
-        plt.xlabel('ID nadajnika', labelpad=30) 
+        plt.title(f'Boxplot siły sygnału dla nadajnika {measurement_name} (Pozycja: x = {df_measurement["x"].iloc[0] if not df_measurement.empty else "N/A"}, y = {df_measurement["y"].iloc[0] if not df_measurement.empty else "N/A"})')
+        
 
         ax.set_xticks(positions)
         ax.set_xticklabels(transmitter_order, rotation=0, ha='center')
@@ -156,11 +156,11 @@ def plot_boxplots(calc_data, dfs, transmitter_order, positions):
             ax.text(i + 1, -92, f'n={count}', ha='center', va='top', color='black') 
 
         plt.ylabel('Moc sygnału')
-
+        plt.xlabel('ID nadajnika') 
         
 
-        plt.text(len(transmitter_order), -97, f'Total samples: {total_count}', ha='right')
-        plt.tight_layout()
+        plt.text(len(transmitter_order), -97, f'Wszystkich próbek: {total_count}', ha='right')
+        # plt.tight_layout()
         plt.ylim(-100, -40)
         plt.savefig(f"obrazy/boxplot_rssi_pozycja_{measurement_name}.png")
     return fig

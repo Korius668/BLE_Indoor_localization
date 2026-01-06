@@ -22,7 +22,7 @@ def objective_function(position, beacons, distances_from_rssi, weights=None):
         residuals = true_distances - distances_from_rssi
     else:        
         residuals = weights*(true_distances - distances_from_rssi)
-    return np.sum(np.sqrt(residuals**2))
+    return np.sqrt(residuals**2)
 
 
 def calculate_residuals(estimated_position, beacons, distances_from_rssi, weights=None):
@@ -33,12 +33,12 @@ def calculate_residuals(estimated_position, beacons, distances_from_rssi, weight
         residuals = true_distances - distances_from_rssi
     else:        
         residuals = weights*(true_distances - distances_from_rssi)
-    return np.sqrt(residuals**2)/distances_from_rssi
+    return residuals/distances_from_rssi
 
 def calculate_estimated_positions(
     samples,
     df_transmitters,
-    cnt = 10000
+    cnt = 100
 ):
     
     estimated_positions_per_measurement = {}
@@ -159,12 +159,12 @@ def plot_area_of_function(X,Y,d,ax =None):
 
             d_input = avg_rssi_distances
             
-            Z[j, k] = objective_function(
+            Z[j, k] = np.sum(objective_function(
                 (X[j, k], Y[j, k]), 
                 beacons_coords, 
-                d_input, 
+                d_input,
                 weights=weights
-            )
+            ))
     contour = plt.contourf(X, Y, Z, levels=25,alpha=0.5, cmap='viridis')
     max_idx = np.argmin(Z)
     max_coord = np.unravel_index(max_idx, Z.shape)
@@ -189,7 +189,7 @@ def plot_average_positions(avg_pos_x, avg_pos_y , ax=None):
         alpha=0.9,
         s=120,
         marker='v',
-        label=f'Srednia pozycja z prwadziwych pomiarów {avg_pos_x:.2f}, {avg_pos_y:.2f}'
+        label=f'Pozycja wyliczona z średnich rssi pomiarów: {avg_pos_x:.2f}, {avg_pos_y:.2f}'
     )
     return ax
 
@@ -252,5 +252,5 @@ if __name__ == "__main__":
         ax.set_xlim(-20, 20)
         ax.legend(loc='upper right')
         
-        plt.savefig(f"obrazy/least_squares_estymacja_pozycji_{measurement_num}.png")
+        # plt.savefig(f"obrazy/least_squares_estymacja_pozycji_{measurement_num}.png")
     plt.show()
