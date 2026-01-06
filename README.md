@@ -29,11 +29,25 @@
 ![Mapa RSSI - Pozycja 10](obrazy/mapa_rssi_pozycja_10.png)
 ![Mapa RSSI - Pozycja 11](obrazy/mapa_rssi_pozycja_11.png)
 
+## Odległość od nadajników
+Dzięki mocy sygnału (RSSI) można oszacować odległość od nadajnika. Potrzebne jednak jest poznanie zależności między mocą sygnału a odległością.
+W tym celu użyjemy wcześniej przeprowadzonych pomiarów mocy sygnału w różnych znanych pozycjach.
+Dzięki temu możemy wyznaczyć zależność między mocą sygnału a odległością.
+### Regresja Liniowa
+Zależność między mocą sygnalu (RSSI) a odległością od nadajnika, wyznaczymy przy pomocy regresji liniowej na podstawie zebranych danych pomiarowych.
+Poniższy wykres przedstawia wyniki regresji liniowej, gdzie oś X odpowiada logarytmowi odległości od nadajnika, a oś Y reprezentuje moc sygnału (RSSI w dBm).
+![Regresja Liniowa](obrazy/regresja_liniowa.png)
+Ten sam wykres ale z osią X w skali liniowej.
+![Regresja Liniowa](obrazy/regresja_liniowa2.png)
 
-### Algorytm minimalizacji metodą najmniejszych kwadratów
+## Algorytm minimalizacji metodą najmniejszych kwadratów
+Do aproksymacji pozycji, użyty zostanie algorytm najmniejszych kwadratów
 
-Z pomiarów, dla każdego z nadajników w każdej pozycji pomiarowej, wyliczono średnią moc sygnału.
+### Monte Carlo + Least Squares
+
+Korzystając z pomiarów, dla każdego z nadajników w każdej pozycji pomiarowej, wyliczona została średnia moc sygnału.
 Następnie wokół tej wartości nawygenerowano z rozkładu normalnego, populację nowych mocy sygnałów.
+
 Kolejno przy użyciu zależności wyznaczonej wczesniej z regresji liniowej,wyliczono odległość między  odpowiada tej mocy dla tego nadajnika. Wartości tych odległości następnie użyto w algorytmie najmniejszych kwadratów w celu estymacji pozycji urządzenia pomiarowego. Poniżej przedstawiono wyniki estymacji pozycji dla każdej z 11 pozycji pomiarowych.
 
 
@@ -86,11 +100,6 @@ Zamiana kwadratu residuów bierzemy ich wartość absolutną.Zwiększa to rozdzi
 
 Podzielenie przez odległość sprawia, że residua dużych odległości są uważane za mniej istotne, dlatego są mniej redukowane, a algorytm zbliża się bardziej do nadajników z mocniejszą mocą sygnału.
 
-### Regresja Liniowa
-Aby wyznaczyć zależność między mocą sygnalu (RSSI) a odległością od nadajnika, przeprowadzono regresję liniową na podstawie zebranych danych pomiarowych. Poniższy wykres przedstawia wyniki regresji liniowej, gdzie oś X odpowiada logarytmowi odległości od nadajnika, a oś Y reprezentuje moc sygnału (RSSI w dBm).
-![Regresja Liniowa](obrazy/regresja_liniowa.png)
-Ten sam wykres ale z osią X w skali liniowej.
-![Regresja Liniowa](obrazy/regresja_liniowa2.png)
 
 
 
