@@ -29,34 +29,8 @@
 ![Mapa RSSI - Pozycja 10](obrazy/mapa_rssi_pozycja_10.png)
 ![Mapa RSSI - Pozycja 11](obrazy/mapa_rssi_pozycja_11.png)
 
-## Odległość od nadajników
-Dzięki mocy sygnału (RSSI) można oszacować odległość od nadajnika. Potrzebne jednak jest poznanie zależności między mocą sygnału a odległością.
-W tym celu użyjemy wcześniej przeprowadzonych pomiarów mocy sygnału w różnych znanych pozycjach.
-Dzięki temu możemy wyznaczyć zależność między mocą sygnału a odległością.
-### Regresja Liniowa
-Zależność między mocą sygnalu (RSSI) a odległością od nadajnika, wyznaczymy przy pomocy regresji liniowej na podstawie zebranych danych pomiarowych.
-Poniższy wykres przedstawia wyniki regresji liniowej, gdzie oś X odpowiada logarytmowi odległości od nadajnika, a oś Y reprezentuje moc sygnału (RSSI w dBm).
-![Regresja Liniowa](obrazy/regresja_liniowa.png)
-Ten sam wykres ale z osią X w skali liniowej.
-![Regresja Liniowa](obrazy/regresja_liniowa2.png)
-
-## Algorytm minimalizacji metodą najmniejszych kwadratów
-Do aproksymacji pozycji, użyty zostanie algorytm najmniejszych kwadratów
-
-### Monte Carlo + Least Squares
-
-Korzystając z pomiarów, dla każdego z nadajników w każdej pozycji pomiarowej, wyliczona została średnia moc sygnału.
-Następnie wokół tej wartości nawygenerowano z rozkładu normalnego, populację nowych mocy sygnałów.
-
-Kolejno przy użyciu zależności wyznaczonej wczesniej z regresji liniowej,wyliczono odległość między  odpowiada tej mocy dla tego nadajnika. Wartości tych odległości następnie użyto w algorytmie najmniejszych kwadratów w celu estymacji pozycji urządzenia pomiarowego. Poniżej przedstawiono wyniki estymacji pozycji dla każdej z 11 pozycji pomiarowych.
-
-
-Algorytm wykorzystuje funkcję `calculate_residuals`, która oblicza różnicę pomiędzy:
-- **rzeczywistymi odległościami** od punktu estymowanego `(x, y)` do beaconów,
-a **wyliczonymi odległościami z rssi** (`distances`).
-
-#### Wzór na odległość
-Odległość od punktu `(x, y)` do beacona o współrzędnych `(x_i, y_i)` wyrażona jest wzorem euklidesowym:
+## Odległość od nadajników geometryczna
+Odległość od punktu `(x, y)` do nadajnika o współrzędnych `(x_i, y_i)` wyrażona jest wzorem euklidesowym:
 
 
 
@@ -65,71 +39,47 @@ d_i = \sqrt{(x - x_i)^2 + (y - y_i)^2}
 \]
 
 
+## Odległości od nadajników z mocy sygnału (RSSI)
+Dzięki mocy sygnału (RSSI) można oszacować odległość od nadajnika. Potrzebne jednak jest poznanie zależności między mocą sygnału a odległością.
 
-#### Różnica
-Różnica pomiędzy obliczoną odległością z wyznaczonego punktu, a tą zmierzoną z mocy:
+W tym celu użyjemy wcześniej przeprowadzonych pomiarów mocy sygnału w różnych znanych pozycjach.
+### Regresja Liniowa
+Zależność między mocą sygnalu (RSSI) a odległością od nadajnika, wyznaczymy przy pomocy regresji liniowej na podstawie zebranych danych pomiarowych.
+Poniższy wykres przedstawia wyniki regresji liniowej, gdzie oś X odpowiada logarytmowi odległości od nadajnika, a oś Y reprezentuje moc sygnału (RSSI w dBm).
+![Regresja Liniowa](obrazy/regresja_liniowa.png)
+Ten sam wykres ale z osią X w skali liniowej.
+![Regresja Liniowa](obrazy/regresja_liniowa2.png)
+
+Obliczoną z regresji liniowej odległość będziemy oznaczać jako: \[d(s_i)\] 
+gdzie:
+- $s_i$ to moc sygnału z nadajnika i(RSSI).
 
 
+## Algorytm optymalizacji (Funkcja celu)
 
-\[
-r_i = d_i - d(s_i)
-\]
+Do aproksymacji pozycji  wykorzystano iteracyjny algorytm minimalizacji błędów. Jego zadaniem jest znalezienie takich współrzędnych , dla których odległości geometryczne  są jak najbardziej zbliżone do odległości wyznaczonych z pomiarów .
 
+### Residuum
 
+Jako miarę błędu lokalnego (residuum) dla pojedynczego nadajnika przyjmuje się różnicę bezwzględną pomiędzy obiema odległościami:
 
-#### Funkcja celu
-Metoda najmniejszych kwadratów minimalizuje sumę kwadratów residuów:
+$$r_i = | d_i - d(s_i) |$$
 
+### Zmodyfikowana funkcja kosztu
 
+Zamiast klasycznej metody najmniejszych kwadratów (sumy kwadratów błędów), zastosowano zmodyfikowaną funkcję celu. Residuum z klasycznego wzoru zostało dodatkowo podzielone przez moc sygnału. Pozwala to na promowanie mniejszych błędów przy większych mocach sygnału (czyli mniejszych odległościach od nadajnika), co jest korzystne z punktu widzenia dokładności lokalizacji.:
 
-\[
-F(x, y) = \sum_{i=1}^{N} \left( \sqrt{(x - x_i)^2 + (y - y_i)^2} - d(s_i) \right)^2
-\]
+$$F(x, y) = \sum_{i=1}^{N} \frac{| d_i - d(s_i) |}{d(s_i)}$$
 
 gdzie:
-- \( (x, y) \) – szukana pozycja,
-- \( (x_i, y_i) \) – współrzędne beaconów,
-- \( d_i^{measured} \) – zmierzona odległość do beacona.
-
-#### Własna wersja
-
-\[
-F(x, y) = \sum_{i=1}^{N} \frac{| d_i - d(s_i) |}{d(s_i)}
-\]
-Zamiana kwadratu residuów bierzemy ich wartość absolutną.Zwiększa to rozdzielczość.
-
-Podzielenie przez odległość sprawia, że residua dużych odległości są uważane za mniej istotne, dlatego są mniej redukowane, a algorytm zbliża się bardziej do nadajników z mocniejszą mocą sygnału.
+- $N$ - liczba nadajników
 
 
+## Monte Carlo
 
+Korzystając z pomiarów, dla każdego z nadajników, w każdej pozycji pomiarowej, wyliczona została średnia moc sygnału.
 
-#### Działanie algorytmu
-1. **Start** od początkowego przybliżenia `initial_guess`.
-2. **Obliczenie residuów** dla wszystkich beaconów.
-3. **Minimalizacja** sumy kwadratów residuów przy użyciu `least_squares`.
-4. **Wynik** – najlepsze przybliżenie pozycji `(x, y)`, które najbardziej pasuje do zmierzonych odległości.
-
-# Algorytm least squares
-
-```mermaid
-flowchart TD
-
-    A[\Pomiar mocy sygnałów nadajników w jednej pozycji/] --> B[Wyliczenie średniej mocy sygnału dla każdego z nadajników]
-    B -.-> C[\Generowanie populacji mocy sygnału z rozkładu normalnego/]
-    
-    F[Losowanie pozycji początkowej] --> G
-    C --> H[Obliczanie odległości z mocy sygnału przy pomocy regresji liniowej]
-    E[Pozycje beaconów]--> G[Obliczenie odległości do każdego z beaconów]
-    H--> J[Obliczenie residuów]
-    G-->J
-    J -->K[Minimalizacja sumy kwadratów residuów]
-    K --> M[Wynik: najlepsze przybliżenie pozycji x,y]
-```
-
-
-## Metoda monte carlo do wyznaczenia odległości
-
-W celu oszacowania odległości od nadajników na podstawie zmierzonych wartości mocy sygnału (RSSI), zastosowano metodę Monte Carlo. Dla każdej z 11 pozycji pomiarowych, wygenerowano 1000 próbek mocy sygnału z rozkładu normalnego, wykorzystując średnią i odchylenie standardowe zmierzonych wartości RSSI. Następnie, korzystając z wcześniej wyznaczonej regresji liniowej, przeliczono każdą z wygenerowanych próbek mocy sygnału na odpowiadającą jej odległość od nadajnika.
+Następnie wokół tej wartości wygenerowano, z rozkładu normalnego, populację nowych mocy.
 
 
 ![Rozrzut wygenowanych próbek odległości - pozycji 1](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_1.png)
@@ -143,6 +93,62 @@ W celu oszacowania odległości od nadajników na podstawie zmierzonych wartośc
 ![Rozrzut wygenowanych próbek odległości - pozycji 9](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_9.png)
 ![Rozrzut wygenowanych próbek odległości - pozycji 10](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_10.png)
 ![Rozrzut wygenowanych próbek odległości - pozycji 11](obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_11.png)
+
+
+Kolejno przy użyciu zależności wyznaczonej wczesniej z regresji liniowej, wyliczono odległość odpowiadającą danej mocy. Wartości tych odległości następnie użyto w algorytmie najmniejszych kwadratów w celu estymacji pozycji urządzenia pomiarowego. 
+
+
+
+### Algorytm least squares
+
+
+```mermaid
+flowchart TD
+    %% Sekcja przetwarzania sygnału (bez zmian)
+    A[\Pomiar mocy sygnałów nadajników w jednej pozycji/] --> B[Wyliczenie średniej mocy sygnału]
+    B -.-> C[\Generowanie populacji mocy z rozkładu normalnego/]
+    C --> H["Obliczanie odległości z mocy sygnału - d(s_i) "]
+
+    %% Dane wejściowe do algorytmu
+    
+    subgraph Dane_Wejsciowe [Dane Wejściowe]
+        direction LR
+        E[Znane pozycje beaconów x,y]
+        F[Losowanie pozycji początkowej x0, y0]
+        H
+    end
+
+    %% Algorytm iteracyjny Least Squares
+    subgraph Iteracyjny_Algorytm_Least_Squares [Pętla Optymalizacyjna MNK]
+        direction LR
+        H --> J_iter["Obliczenie funkcji celu F(x,y)"]
+        F --> G_iter[Obliczenie geometrycznych odległości z obecnej pozycji x,y ]
+        E--> G_iter
+        G_iter --> J_iter
+        
+        J_iter --> K_check{Czy kryterium stopu spełnione? 
+        mały błąd lub brak zmian}
+        
+        K_check -- NIE --> L_update[Oblicz Jacobian i wykonaj krok Aktualizacja pozycji x,y]
+        
+        direction BT
+        L_update --> G_iter 
+        
+    end
+    direction LR
+    M[Wynik: Najlepsze przybliżenie pozycji x,y]
+    %% Wynik
+    K_check -- TAK --> M
+
+    %% Stylowanie dla czytelności
+    style Iteracyjny_Algorytm_Least_Squares fill:#f9f9f9,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    style K_check fill:#ffeb3b,stroke:#fbc02d
+    style L_update fill:#e1f5fe,stroke:#0277bd
+```
+
+W celu oszacowania odległości od nadajników na podstawie zmierzonych wartości mocy sygnału (RSSI), zastosowano metodę Monte Carlo. Dla każdej z 11 pozycji pomiarowych, wygenerowano 1000 próbek mocy sygnału z rozkładu normalnego, wykorzystując średnią i odchylenie standardowe zmierzonych wartości RSSI. Następnie, korzystając z wcześniej wyznaczonej regresji liniowej, przeliczono każdą z wygenerowanych próbek mocy sygnału na odpowiadającą jej odległość od nadajnika.
+
+Poniżej przedstawiono wyniki estymacji pozycji dla każdej z 11 pozycji pomiarowych.
 
 ![Least Squares - Estymacja pozycji - 1](obrazy/least_squares_estymacja_pozycji_1.png)
 ![Least Squares - Estymacja pozycji - 2](obrazy/least_squares_estymacja_pozycji_2.png)
