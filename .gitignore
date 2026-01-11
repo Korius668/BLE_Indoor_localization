@@ -15,3 +15,5 @@ pomiar1/__pycache__/pozycje.cpython-314.pyc
 pomiar1/__pycache__/regresja_liniowa.cpython-314.pyc
 pomiar1/__pycache__/rozrzut_pozycji.cpython-314.pyc
 pomiar1/__pycache__/sila_sygnalu.cpython-314.pyc
+__pycache__
+venv
