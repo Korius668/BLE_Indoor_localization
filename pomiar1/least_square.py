@@ -16,34 +16,59 @@ def distance_between_2_points(x1, y1, x2, y2):
 
 def objective_function(position, beacons, distances_from_rssi, weights=None):
     x, y = position
-    true_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
+    geometrical_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
     residuals =0
     if weights is None:
-        residuals = true_distances - distances_from_rssi
+        residuals = geometrical_distances - distances_from_rssi
     else:        
-        residuals = weights*(true_distances - distances_from_rssi)
-    return np.sqrt(residuals**2)
+        residuals = weights*(geometrical_distances - distances_from_rssi)
+    return np.abs(residuals)
 
 
-def calculate_residuals(estimated_position, beacons, distances_from_rssi, weights=None):
-    x, y = estimated_position
-    true_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
-    residuals =0
-    if weights is None:
-        residuals = true_distances - distances_from_rssi
-    else:        
-        residuals = weights*(true_distances - distances_from_rssi)
-    return residuals/distances_from_rssi
+def prepare_distance_data(d):
+        
+    beacons_coords_list = []
+    weights = []
+    rssi_distances = []
+    
+    for j, b in enumerate(d):
+        if (not np.isnan(b['count'])):
+            transmitter_row = df_transmitters[df_transmitters['Id'] == j+1].iloc[0]
+            beacons_coords_list.append([transmitter_row['x'], transmitter_row['y']])
+            rssi_distance = calculate_distance_from_rssi(b['avg'])
+            weights.append(b['count'])
+            rssi_distances.append(rssi_distance)
 
-def calculate_estimated_positions(
+    if not weights or np.sum(weights) == 0:
+        return np.nan, np.nan
+
+    weights = np.array(weights, dtype=float)
+    weights /= np.sum(weights)
+    beacons_coords = np.array(beacons_coords_list)
+    
+    return beacons_coords, rssi_distances, weights
+
+
+def least_square_estimation(beacons_coords, distances_from_rssi, weights=None):
+    min_real_x_loc, min_real_y_loc = -10, -10
+    max_real_x_loc, max_real_y_loc = 20.0, 27.0
+    random_x = np.random.uniform(min_real_x_loc, max_real_x_loc)
+    random_y = np.random.uniform(min_real_y_loc, max_real_y_loc)
+    
+    initial_guess = np.array([random_x,random_y])
+    position = least_squares(
+        objective_function,
+        initial_guess,
+        args=(beacons_coords, distances_from_rssi)
+    )
+    return position.x
+
+def calculate_monte_carlo_positions(
     samples,
-    df_transmitters,
     cnt = 100
 ):
     
     estimated_positions_per_measurement = {}
-    min_real_x_loc, min_real_y_loc = 0, 0
-    max_real_x_loc, max_real_y_loc = 2.6, 27.0
 
     for measurement_num, s_data in samples.items():
   
@@ -68,104 +93,46 @@ def calculate_estimated_positions(
         current_measurement_estimated_positions = []
 
         for i in range(cnt):
-            distances_from_rssi = []
+            rssi_distances = []
             for tx_id in active_transmitter_ids:                
                 rssi_sample = np.random.choice(s_data[tx_id])
-                distance = calculate_distance_from_rssi(rssi_sample)
-                distances_from_rssi.append(distance)
-
-            distances_from_rssi = np.array(distances_from_rssi)
+                rssi_distance = calculate_distance_from_rssi(rssi_sample)
+                rssi_distances.append(rssi_distance)
+            rssi_distances = np.array(rssi_distances)
             
-            random_x = np.random.uniform(min_real_x_loc, max_real_x_loc)
-            random_y = np.random.uniform(min_real_y_loc, max_real_y_loc)
-            initial_guess = np.array([random_x, random_y])
-            result = least_squares(
-                calculate_residuals,
-                initial_guess,
-                args=(beacons_coords, distances_from_rssi)
-                # bounds=((min_real_x_loc, min_real_y_loc), (max_real_x_loc, max_real_y_loc))
-            )
-            current_measurement_estimated_positions.append(result.x)
+            position = least_square_estimation(beacons_coords, rssi_distances)
+            
+            current_measurement_estimated_positions.append(position)
 
         estimated_positions_per_measurement[measurement_num] = np.array(current_measurement_estimated_positions)   
     return estimated_positions_per_measurement
 
 def calculate_average_positions(d):
-    min_real_x_loc, min_real_y_loc = -10, -10
-    max_real_x_loc, max_real_y_loc = 20.0, 27.0
-   
-    beacons_coords_list = []
-    distances_from_rssi = []
-    weights = []
-
-    for i, b in enumerate(d):
-        if np.isnan(b['count']):
-            continue
-        
-        transmitter_row = df_transmitters[df_transmitters['Id'] == i+1].iloc[0]
-        if transmitter_row.empty:
-            continue
-        distance = calculate_distance_from_rssi(b['avg'])
-        distances_from_rssi.append(distance)
-        beacons_coords_list.append([transmitter_row['x'],transmitter_row['y']])
-        weights.append(b['count'])
-
-    if not weights or np.sum(weights) == 0:
-        return np.nan, np.nan
-
-    weights = np.array(weights, dtype=float)
-    weights /= np.sum(weights)
-
-    beacons_coords = np.array(beacons_coords_list)
-    distances_from_rssi = np.array(distances_from_rssi)
-    random_x = np.random.uniform(min_real_x_loc, max_real_x_loc)
-    random_y = np.random.uniform(min_real_y_loc, max_real_y_loc)
-    initial_guess = np.array([random_x,random_y])
-    average_pos = least_squares(
-        calculate_residuals,
-        initial_guess,
-        args=(beacons_coords, distances_from_rssi)
-    )
+    beacons_coords, rssi_distances, weights = prepare_distance_data(d)
+    average_pos = least_square_estimation(beacons_coords, rssi_distances, weights)
     
-    return average_pos.x[0], average_pos.x[1]
-
-
+    return average_pos[0], average_pos[1]
 
 
 def plot_area_of_function(X,Y,d,ax =None):
     if ax is None:
         ax = plot_map(ax)
-        
-    weights = []
-    beacons_coords_list = []
-    total_count = 0
-    avg_rssi_distances = []
-    Z = np.zeros_like(X)
-    for j, b in enumerate(d):
-        if (not np.isnan(b['count'])):
-            transmitter_row = df_transmitters[df_transmitters['Id'] == j+1].iloc[0]
-            beacons_coords_list.append([transmitter_row['x'], transmitter_row['y']])
-            avg_rssi_distance = calculate_distance_from_rssi(b['avg'])
-            weights.append(b['count'])
-            total_count+=b['count']
-            avg_rssi_distances.append(avg_rssi_distance)
-    total_count = np.sum(weights)
-    weights = [w / total_count for w in weights]
-    weights = np.array(weights)
-    beacons_coords = np.array(beacons_coords_list)
     
+    beacons_coords, rssi_distances, weights = prepare_distance_data(d)
+    
+    Z = np.zeros_like(X)
     for j in range(X.shape[0]):
         for k in range(X.shape[1]): 
 
-            d_input = avg_rssi_distances
+            d_input = rssi_distances
             
-            Z[j, k] = np.sum(objective_function(
+            Z[j, k] =np.sum(objective_function(
                 (X[j, k], Y[j, k]), 
                 beacons_coords, 
-                d_input,
-                weights=weights
+                d_input
+                # weights=weights
             ))
-    contour = plt.contourf(X, Y, Z, levels=25,alpha=0.5, cmap='viridis')
+    contour = plt.contourf(X, Y, Z, levels=100,alpha=0.5, cmap='viridis')
     max_idx = np.argmin(Z)
     max_coord = np.unravel_index(max_idx, Z.shape)
     max_x = X[max_coord]
@@ -175,7 +142,7 @@ def plot_area_of_function(X,Y,d,ax =None):
 
     plt.colorbar(contour, label="Wartość funkcji celu")
     
-    ax.scatter(max_x, max_y, c='cyan', s=120, marker='X', label=f'Minimum funkcji{max_x:0.2f}, {max_y:0.2f}')
+    ax.scatter(max_x, max_y, c='cyan', s=120, marker='X', label=f'Minimum funkcji {max_x:0.2f}, {max_y:0.2f}')
     return ax
 
 def plot_average_positions(avg_pos_x, avg_pos_y , ax=None):
@@ -225,32 +192,36 @@ def plot_estimated_positions(
     return ax
     
 if __name__ == "__main__":
-    x_range = np.linspace(-20, 20,20)
-    y_range = np.linspace(-10, 42, 20)
+    x_range = np.linspace(-20, 20,100)
+    y_range = np.linspace(-10, 42, 100)
     
     X, Y = np.meshgrid(x_range, y_range)
-    cnt = 10000
+    cnt = 50
     samples = generate_samples(cnt)
-    estimated_positions_per_measurement = calculate_estimated_positions(samples, df_transmitters, cnt=cnt)
+    estimated_positions_per_measurement = calculate_monte_carlo_positions(samples, cnt=cnt)
     for measurement_num, estimated_positions in estimated_positions_per_measurement.items():
         fig, ax = plt.subplots(figsize=(10, 10))
         ax = plot_map(ax)
         ax= plot_area_of_function(X,Y,d=calc_data[measurement_num],ax=ax)
-        # ax = plot_signal_strength_map(measurement_num,dfs[measurement_num], ax=ax, fig=fig)
-        ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax)
-        avg_x, avg_y = calculate_average_positions(d=calc_data[measurement_num])
-        ax = plot_average_positions(avg_x,avg_y, ax=ax)
         ax = plot_estimated_positions(
             measurement_num,
             estimated_positions,
             ax=ax            
         )
+        # ax = plot_signal_strength_map(measurement_num,dfs[measurement_num], ax=ax, fig=fig)
+        ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax)
+        avg_x, avg_y = calculate_average_positions(d=calc_data[measurement_num])
+        ax = plot_average_positions(avg_x,avg_y, ax=ax)
+       
         ax.set_xlabel('Oś X (m)')
         ax.set_ylabel('Oś Y (m)')
         ax.set_aspect('equal', adjustable='box')
         ax.set_ylim(-10, 42)
         ax.set_xlim(-20, 20)
         ax.legend(loc='upper right')
-        
+        if measurement_num == 1:
+            plt.savefig(f"obrazy2/4.png")
         # plt.savefig(f"obrazy/least_squares_estymacja_pozycji_{measurement_num}.png")
     plt.show()
+    
+    
