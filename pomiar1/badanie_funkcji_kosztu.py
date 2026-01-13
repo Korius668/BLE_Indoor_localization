@@ -68,14 +68,12 @@ def plot_area_of_function(X,Y,d,ax =None, func=objective_function1, w_flag=False
     Z = np.zeros_like(X)
     for j in range(X.shape[0]):
         for k in range(X.shape[1]): 
-
-            d_input = rssi_distances
-            
+           
             Z[j, k] =np.sum(func(
                 (X[j, k], Y[j, k]), 
                 beacons_coords, 
-                d_input,
-                weights=weights
+                rssi_distances,
+                weights
             ))
     contour = plt.contourf(X, Y, Z, levels=100,alpha=0.5, cmap='viridis')
     max_idx = np.argmin(Z)
@@ -121,11 +119,10 @@ if __name__ == "__main__":
         fig =  plt.figure(figsize=(20, 10))
         
         ax = plt.subplot(1,4,1)
-        func = objective_function1
         ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func)
+        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=objective_function1)
         ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)
-        avg_x, avg_y = calculate_average_positions(d=d, func=func)
+        avg_x, avg_y = calculate_average_positions(d=d, func=objective_function1)
         ax = plot_average_positions(avg_x,avg_y, ax=ax)
   
         ax.set_aspect('equal')
@@ -136,12 +133,11 @@ if __name__ == "__main__":
 
         
         ax = plt.subplot(1,4,2)
-        func = objective_function2
         ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func)
+        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=objective_function2)
         ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)
        
-        avg_x, avg_y = calculate_average_positions(d=d, func=func)
+        avg_x, avg_y = calculate_average_positions(d=d, func=objective_function2)
         ax = plot_average_positions(avg_x,avg_y, ax=ax)
 
         ax.set_aspect('equal')
@@ -152,11 +148,10 @@ if __name__ == "__main__":
      
                 
         ax = plt.subplot(1,4,3)
-        func = objective_function1
         ax = plot_map(ax)
         ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func, w_flag=True)
         ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)  
-        avg_x, avg_y = calculate_average_positions(d=d, func=func,  w_flag=True)
+        avg_x, avg_y = calculate_average_positions(d=d, func=objective_function1,  w_flag=True)
         ax = plot_average_positions(avg_x,avg_y, ax=ax)
         ax.set_aspect('equal')
         ax.set_ylim(ymin, ymax)
@@ -167,9 +162,9 @@ if __name__ == "__main__":
         ax = plt.subplot(1,4,4)
         func = objective_function2
         ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func, w_flag=True)
+        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=objective_function2, w_flag=True)
         ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)
-        avg_x, avg_y = calculate_average_positions(d=d, func=func,  w_flag=True)
+        avg_x, avg_y = calculate_average_positions(d=d, func=objective_function2,  w_flag=True)
         ax = plot_average_positions(avg_x,avg_y, ax=ax)
         ax.set_aspect('equal')
         ax.set_ylim(ymin, ymax)
