@@ -1,13 +1,15 @@
 from scipy.optimize import least_squares
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-from pomiar1.boxplot import calc_data, dfs
+from pomiar1.generowanie_pozycji import generate_samples
+from pomiar1.boxplot import calc_data, dfs, transmitter_order
 from pomiar1.dystans import plot_distance_from_signal
-from mapa_nadajniki import plot_map
+from pomiar1.regresja_liniowa import calculate_distance_from_rssi
 from pomiar1.least_square import distance_between_2_points, prepare_distance_data
-
-
+from mapa_nadajniki import df_transmitters, plot_map
+from pomiar1.pozycje import df_positions
 
 def objective_function1(position, beacons, distances_from_rssi, weights=None):
     x, y = position
@@ -17,7 +19,7 @@ def objective_function1(position, beacons, distances_from_rssi, weights=None):
         residuals = geometrical_distances - distances_from_rssi
     else:        
         residuals = weights*(geometrical_distances - distances_from_rssi)
-    return np.abs(residuals)
+    return residuals
 
 def objective_function2(position, beacons, distances_from_rssi, weights=None):
     x, y = position
@@ -27,7 +29,7 @@ def objective_function2(position, beacons, distances_from_rssi, weights=None):
         residuals = geometrical_distances - distances_from_rssi
     else:        
         residuals = weights*(geometrical_distances - distances_from_rssi)
-    return np.abs(residuals)/distances_from_rssi
+    return residuals/distances_from_rssi
 
 
 
@@ -41,9 +43,56 @@ def least_square_estimation(beacons_coords, distances_from_rssi, weights=None, f
     position = least_squares(
         func,
         initial_guess,
-        args=(beacons_coords, distances_from_rssi)
+        args=(beacons_coords, distances_from_rssi, weights)
     )
-    return position.x
+    return position.x, position.cost
+
+
+def calculate_monte_carlo_positions(
+    samples,
+    cnt = 100,
+    func=objective_function1,
+    w_flag=False
+):
+    
+    estimated_positions_per_measurement = {}
+
+    for measurement_num, s_data in samples.items():
+        beacons_coords_list = []
+        _, _, weights = prepare_distance_data(d = calc_data[measurement_num])
+        if not w_flag:
+            weights = None
+        active_transmitter_ids = []
+        for tx_id in transmitter_order:
+
+            if tx_id in s_data and len(s_data[tx_id]) > 0:
+                active_transmitter_ids.append(tx_id)
+                transmitter_row = df_transmitters[df_transmitters['Id'] == int(tx_id)].iloc[0]
+                beacons_coords_list.append([transmitter_row['x'], transmitter_row['y']])
+                
+        if not beacons_coords_list:
+            print(f"Skipping measurement {measurement_num} due to no active transmitters with samples.")
+            estimated_positions_per_measurement[measurement_num] = np.array([])
+            continue
+
+        beacons_coords = np.array(beacons_coords_list)
+        current_measurement_estimated_positions = []
+
+        for i in range(cnt):
+            rssi_distances = []
+            for tx_id in active_transmitter_ids:                
+                rssi_sample = np.random.choice(s_data[tx_id])
+                rssi_distance = calculate_distance_from_rssi(rssi_sample)
+                rssi_distances.append(rssi_distance)
+            rssi_distances = np.array(rssi_distances)
+            
+            position, cost = least_square_estimation(beacons_coords, rssi_distances, weights, func=func)
+            
+            current_measurement_estimated_positions.append(position)
+
+        estimated_positions_per_measurement[measurement_num] = np.array(current_measurement_estimated_positions)   
+    return estimated_positions_per_measurement
+
 
 
 def calculate_average_positions(d, func=objective_function1, w_flag=False):
@@ -51,9 +100,9 @@ def calculate_average_positions(d, func=objective_function1, w_flag=False):
     if not w_flag:
         weights = None
 
-    average_pos = least_square_estimation(beacons_coords, rssi_distances, weights, func=func)
+    average_pos, cost = least_square_estimation(beacons_coords, rssi_distances, weights, func=func)
     
-    return average_pos[0], average_pos[1]
+    return average_pos[0], average_pos[1], cost
 
 
 def plot_area_of_function(X,Y,d,ax =None, func=objective_function1, w_flag=False):
@@ -68,15 +117,14 @@ def plot_area_of_function(X,Y,d,ax =None, func=objective_function1, w_flag=False
     Z = np.zeros_like(X)
     for j in range(X.shape[0]):
         for k in range(X.shape[1]): 
-
             d_input = rssi_distances
-            
-            Z[j, k] =np.sum(func(
+                        
+            Z[j, k] =0.5*np.sum(func(
                 (X[j, k], Y[j, k]), 
                 beacons_coords, 
                 d_input,
                 weights=weights
-            ))
+            )**2)
     contour = plt.contourf(X, Y, Z, levels=100,alpha=0.5, cmap='viridis')
     max_idx = np.argmin(Z)
     max_coord = np.unravel_index(max_idx, Z.shape)
@@ -86,9 +134,9 @@ def plot_area_of_function(X,Y,d,ax =None, func=objective_function1, w_flag=False
 
 
     # plt.colorbar(contour, label="Wartość funkcji celu")
-    
+    result = {"x": max_x, "y": max_y, "value": Z[max_coord]}
     ax.scatter(max_x, max_y, c='cyan', s=120, marker='X', label=f'Minimum funkcji {max_x:0.2f}, {max_y:0.2f}')
-    return ax
+    return ax, result
 
 def plot_average_positions(avg_pos_x, avg_pos_y , ax=None):
     if ax is None:
@@ -105,6 +153,36 @@ def plot_average_positions(avg_pos_x, avg_pos_y , ax=None):
     )
     return ax
 
+
+def plot_estimated_positions(
+    measurement_num,
+    estimated_positions,
+    ax=None,
+    fig = None
+):
+    if estimated_positions.size == 0:
+        print(f"No estimated positions to plot for measurement {measurement_num}.")
+        return
+
+    if ax is None:
+        ax = plot_map(ax)
+    if fig is None:
+        fig = plt.gcf()
+        
+    
+    points_x = estimated_positions[:, 0]
+    points_y = estimated_positions[:, 1]
+
+    ax.scatter(
+        points_x,
+        points_y,
+        color='greenyellow',
+        s=5,
+        alpha=0.9,
+        label=f'Estymowane pozycje z populacji wygenerowanej ({len(points_x)} samples)'
+    )
+    
+    return ax
     
 if __name__ == "__main__":
     x_range = np.linspace(-20, 20,100)
@@ -116,73 +194,130 @@ if __name__ == "__main__":
 
     
     X, Y = np.meshgrid(x_range, y_range)
-    for measurement_num, d in calc_data.items():
+    cnt = 50
+    samples = generate_samples(cnt)
+    estimated_positions_1 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function1)
+    estimated_positions_2 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function2)
+    estimated_positions_3 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function1,  w_flag=True)
+    estimated_positions_4 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function2,  w_flag=True) 
     
-        fig =  plt.figure(figsize=(20, 10))
-        
-        ax = plt.subplot(1,4,1)
-        func = objective_function1
-        ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func)
-        ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)
-        avg_x, avg_y = calculate_average_positions(d=d, func=func)
-        ax = plot_average_positions(avg_x,avg_y, ax=ax)
-  
-        ax.set_aspect('equal')
-        ax.set_ylim(ymin, ymax)
-        ax.set_xlim(xmin, xmax)
-        ax.get_legend().remove()
-        ax.set_title('Zwykła')
+    methods_config = [
+    {
+        "method": "Zwykla",
+        "subplot": 1,
+        "func": objective_function1,
+        "estimated_positions": estimated_positions_1,
+        "w_flag": False
+    },
+    {
+        "method": "Dzielona przez odległość od rssi",
+        "subplot": 2,
+        "func": objective_function2,
+        "estimated_positions": estimated_positions_2,
+        "w_flag": False
+    },
+    {
+        "method": "Zwykla z wagami",
+        "subplot": 3,
+        "func": objective_function1,
+        "estimated_positions": estimated_positions_3,
+        "w_flag": True
+    },
+    {
+        "method": "Dzielona przez odległość od rssi z wagami",
+        "subplot": 4,
+        "func": objective_function2,
+        "estimated_positions": estimated_positions_4,
+        "w_flag": True
+    }]
+    output_file = "tabela/estymacja_pozycji.csv"
 
-        
-        ax = plt.subplot(1,4,2)
-        func = objective_function2
-        ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func)
-        ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)
-       
-        avg_x, avg_y = calculate_average_positions(d=d, func=func)
-        ax = plot_average_positions(avg_x,avg_y, ax=ax)
 
-        ax.set_aspect('equal')
-        ax.set_ylim(ymin, ymax)
-        ax.set_xlim(xmin, xmax)
-        ax.get_legend().remove()
-        ax.set_title('Dzielona przez odległość od rssi')
-     
+    open(output_file, "w").close()
+    
+    for measurement_num, d in calc_data.items():
+
+        true_x, true_y = df_positions.loc[measurement_num-1, ['x', 'y']]
+        rows = []
+
+        fig = plt.figure(figsize=(20, 7))
+
+        for cfg in methods_config:
+
+            ax = plt.subplot(1, 4, cfg["subplot"])
+            func = cfg["func"]
+
+            ax = plot_map(ax)
+            ax, area = plot_area_of_function(
+                X, Y, d=d, ax=ax, func=func, w_flag=cfg["w_flag"]
+            )
+            
+            rows.append({
+                "measurement_id": measurement_num,
+                "method": cfg["method"],
+                "wskaznik": "minimum funkcji celu",
+                "est_x": area["x"],
+                "est_y": area["y"],
+                "cost": area["value"],
+                "distance": distance_between_2_points(
+                    true_x, true_y, area["x"], area["y"]
+                ),
+                "true_x": true_x,
+                "true_y": true_y
+            })
+
+            ax = plot_estimated_positions(
+                measurement_num,
+                cfg["estimated_positions"][measurement_num],
+                ax=ax
+            )
+
+            ax = plot_distance_from_signal(
+                measurement_num, dfs[measurement_num], ax, c_flag=False
+            )
+
+            avg_x, avg_y, cost = calculate_average_positions(
+                d=d, func=func, w_flag=cfg["w_flag"]
+            )
+
+            ax = plot_average_positions(avg_x, avg_y, ax=ax)
+
+            ax.set_aspect('equal')
+            ax.set_ylim(ymin, ymax)
+            ax.set_xlim(xmin, xmax)
+            ax.get_legend().remove()
+            ax.set_title(cfg["method"])
+
+            # zapis do CSV (1 wiersz = metoda + wskaźnik)
+            
+            
+            rows.append({
+                "measurement_id": measurement_num,
+                "method": cfg["method"],
+                "wskaznik": "Pozycja średnia",
                 
-        ax = plt.subplot(1,4,3)
-        func = objective_function1
-        ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func, w_flag=True)
-        ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)  
-        avg_x, avg_y = calculate_average_positions(d=d, func=func,  w_flag=True)
-        ax = plot_average_positions(avg_x,avg_y, ax=ax)
-        ax.set_aspect('equal')
-        ax.set_ylim(ymin, ymax)
-        ax.set_xlim(xmin, xmax)
-        ax.get_legend().remove()
-        ax.set_title('Zwykła z wagami')
+                "est_x": avg_x,
+                "est_y": avg_y,
+                "cost": cost,
+                "distance": distance_between_2_points(
+                    true_x, true_y, avg_x, avg_y
+                ),
+                "true_x": true_x,
+                "true_y": true_y
+            })
 
-        ax = plt.subplot(1,4,4)
-        func = objective_function2
-        ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=d,ax=ax, func=func, w_flag=True)
-        ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax, c_flag=False)
-        avg_x, avg_y = calculate_average_positions(d=d, func=func,  w_flag=True)
-        ax = plot_average_positions(avg_x,avg_y, ax=ax)
-        ax.set_aspect('equal')
-        ax.set_ylim(ymin, ymax)
-        ax.set_xlim(xmin, xmax)
-        ax.get_legend().remove()
-        ax.set_title('Dzielona przez odległość od rssi z wagami')
+        df = pd.DataFrame(rows)
+        df.to_csv(
+            output_file,
+            mode="a",
+            index=False,
+            header=(measurement_num == list(calc_data.keys())[0])
+        )
+        with open(output_file, "a") as f:
+            f.write("\n")
 
-        plt.savefig(f"obrazy2/estymacja_pozycji_{measurement_num}.png")
         for c in fig.images:
             if c is plt.colorbar:
                 c.remove()
-
-
-    plt.show()
-    
-    
+        plt.savefig(f"obrazy2/estymacja_pozycji_{measurement_num}.png")
+    # plt.show()

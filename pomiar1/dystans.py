@@ -14,7 +14,7 @@ def plot_distance_from_signal(measurement_name, df_measurement, ax=None,fig = No
         
     if not fig:
         fig = plt.gcf()
-    ax = plot_signal_strength_map(measurement_name, df_measurement, fig=fig, ax=ax)
+    ax = plot_signal_strength_map(measurement_name, df_measurement, fig=fig, ax=ax, c_flag=c_flag)
 
     for index, tx_row in transmitter_stats.iterrows():
         tx_id = tx_row['id nadajnika']

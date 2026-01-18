@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from mapa_nadajniki import plot_map, df_transmitters
 from pomiar1.boxplot import dfs
 
-def plot_signal_strength_map(measurement_name, df_measurement, ax=None, fig=None):
+def plot_signal_strength_map(measurement_name, df_measurement, ax=None, fig=None, c_flag=True):
     if ax is None:
         ax = plot_map(ax)
     if fig is None:
@@ -32,7 +32,7 @@ def plot_signal_strength_map(measurement_name, df_measurement, ax=None, fig=None
         else:
             print(f"Warning: Transmitter ID {tx_id} not found in df_transmitters.")
         
-    if len(ax.collections) > 1:
+    if len(ax.collections) > 1 and c_flag:
         cbar = fig.colorbar(ax.collections[1], ax=ax)
         cbar.set_label('Srednia moc sygnału (dBm)')
 

@@ -12,6 +12,7 @@ Sigma = 7
 
 def generate_samples(n_samples = n_samples):
     samples = {}
+    np.random.seed(1)  # For reproducibility
     for i, d in calc_data.items():
         s={}
         for b in d:
