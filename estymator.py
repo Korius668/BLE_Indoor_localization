@@ -63,16 +63,45 @@ def least_square_estimation(df, func=objective_function):
     return x, y
 
 
-def delta_least_square_estimation(df, last_position, window_step, scale_factor=0.9, func=objective_function):
 
+
+def delta_least_square_estimation(
+        df,
+        last_position,
+        window_step,
+        max_speed=1.4,          # m/s – wolny krok człowieka
+        scale_factor=1,
+        func=objective_function):
+
+    # 1. Estymacja LS
     x1, y1 = least_square_estimation(df, func=func)
     x0, y0 = last_position
-    dx, dy = x1 - x0, y1 - y0
-    
-    x = x0 + dx * scale_factor
-    y = y0 + dy * scale_factor
-    return x, y
 
+    # 2. Wektor ruchu
+    dx = x1 - x0
+    dy = y1 - y0
+
+    # 3. Rzeczywista długość ruchu LS
+    dist = np.sqrt(dx*dx + dy*dy)
+
+    # 4. Maksymalny możliwy ruch w tym oknie czasowym
+    dt = window_step.total_seconds()
+    max_dist = max_speed * dt
+
+    # 5. Jeśli LS proponuje ruch większy niż możliwy → przytnij
+    if dist > max_dist:
+        scale = max_dist / dist
+    else:
+        scale = 1.0
+
+    # 6. Dodatkowe wygładzanie (Twój scale_factor)
+    scale *= scale_factor
+
+    # 7. Nowa pozycja
+    x = x0 + dx * scale
+    y = y0 + dy * scale
+
+    return x, y
 
 
 def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objective_function):
