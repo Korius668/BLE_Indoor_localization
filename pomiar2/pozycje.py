@@ -97,5 +97,5 @@ if __name__ == "__main__":
     print(df_positions)
     ax = plot_transmitters_on_map()
     ax = plot_mesurement_position(ax)
-    plt.savefig(f"obrazy/pozycje_pomiarowe.png")
+    plt.savefig(f"obrazy/pozycje_pomiar2.png")
     plt.show()

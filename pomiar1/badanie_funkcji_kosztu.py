@@ -59,7 +59,7 @@ def calculate_monte_carlo_positions(
 
     for measurement_num, s_data in samples.items():
         beacons_coords_list = []
-        _, _, weights = prepare_distance_data(d = calc_data[measurement_num])
+        _, _, weights = prepare_distance_data(calc_data[measurement_num])
         if not w_flag:
             weights = None
         active_transmitter_ids = []
@@ -95,8 +95,8 @@ def calculate_monte_carlo_positions(
 
 
 
-def calculate_average_positions(d, func=objective_function1, w_flag=False):
-    beacons_coords, rssi_distances, weights = prepare_distance_data(d)
+def calculate_average_positions(calc_data, func=objective_function1, w_flag=False):
+    beacons_coords, rssi_distances, weights = prepare_distance_data(calc_data)
     if not w_flag:
         weights = None
 
@@ -104,8 +104,16 @@ def calculate_average_positions(d, func=objective_function1, w_flag=False):
     
     return average_pos[0], average_pos[1], cost
 
-
-def plot_area_of_function(X,Y,d,ax =None, func=objective_function1, w_flag=False):
+def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objective_function1):
+    result = 0.5*np.sum(func(
+                (x,y), 
+                beacons_coords, 
+                d_input,
+                weights=weights
+            )**2)
+    return result
+    
+def plot_area_of_objective_function(X,Y,d,ax =None, func=objective_function1, w_flag=False):
     if ax is None:
         ax = plot_map(ax)
     
@@ -117,14 +125,9 @@ def plot_area_of_function(X,Y,d,ax =None, func=objective_function1, w_flag=False
     Z = np.zeros_like(X)
     for j in range(X.shape[0]):
         for k in range(X.shape[1]): 
-            d_input = rssi_distances
+            
                         
-            Z[j, k] =0.5*np.sum(func(
-                (X[j, k], Y[j, k]), 
-                beacons_coords, 
-                d_input,
-                weights=weights
-            )**2)
+            Z[j, k] = value_of_objective_function(X[j, k], Y[j, k], beacons_coords, rssi_distances, weights, func=func)
     contour = plt.contourf(X, Y, Z, levels=100,alpha=0.5, cmap='viridis')
     max_idx = np.argmin(Z)
     max_coord = np.unravel_index(max_idx, Z.shape)
@@ -248,22 +251,26 @@ if __name__ == "__main__":
             func = cfg["func"]
 
             ax = plot_map(ax)
-            ax, area = plot_area_of_function(
+            ax, area = plot_area_of_objective_function(
                 X, Y, d=d, ax=ax, func=func, w_flag=cfg["w_flag"]
             )
-            
+            beacons_coords, rssi_distances, weights = prepare_distance_data(d)
+            if not cfg["w_flag"]:
+                weights = None
             rows.append({
                 "measurement_id": measurement_num,
                 "method": cfg["method"],
-                "wskaznik": "minimum funkcji celu",
+                "wskaznik": "Minimum funkcji celu",
                 "est_x": area["x"],
                 "est_y": area["y"],
-                "cost": area["value"],
+                
                 "distance": distance_between_2_points(
                     true_x, true_y, area["x"], area["y"]
                 ),
                 "true_x": true_x,
-                "true_y": true_y
+                "true_y": true_y,
+                "cost": area["value"],
+                "funkcja_celu": value_of_objective_function(area["x"], area["y"], beacons_coords, rssi_distances, weights=weights, func=func)
             })
 
             ax = plot_estimated_positions(
@@ -277,7 +284,7 @@ if __name__ == "__main__":
             )
 
             avg_x, avg_y, cost = calculate_average_positions(
-                d=d, func=func, w_flag=cfg["w_flag"]
+                calc_data=d, func=func, w_flag=cfg["w_flag"]
             )
 
             ax = plot_average_positions(avg_x, avg_y, ax=ax)
@@ -294,16 +301,17 @@ if __name__ == "__main__":
             rows.append({
                 "measurement_id": measurement_num,
                 "method": cfg["method"],
-                "wskaznik": "Pozycja średnia",
-                
+                "wskaznik": "Pozycja wyliczona z uśrednionych zmierzonychrssi",
                 "est_x": avg_x,
                 "est_y": avg_y,
-                "cost": cost,
+                
                 "distance": distance_between_2_points(
                     true_x, true_y, avg_x, avg_y
                 ),
                 "true_x": true_x,
-                "true_y": true_y
+                "true_y": true_y,
+                "cost": cost,
+                "funkcja_celu": value_of_objective_function(avg_x, avg_y, beacons_coords, rssi_distances, weights=weights, func=func)
             })
 
         df = pd.DataFrame(rows)

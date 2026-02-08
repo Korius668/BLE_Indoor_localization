@@ -17,3 +17,8 @@ pomiar1/__pycache__/rozrzut_pozycji.cpython-314.pyc
 pomiar1/__pycache__/sila_sygnalu.cpython-314.pyc
 __pycache__
 venv
+output_LS2/frame_*.png
+output_DLS2/frame_*.png
+output_EKF2/frame_*.png
+output_PF2/frame_*.png
+output_MLE2/frame_*.png

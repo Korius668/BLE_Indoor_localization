@@ -25,13 +25,13 @@ def objective_function(position, beacons, distances_from_rssi, weights=None):
     return np.abs(residuals)
 
 
-def prepare_distance_data(d):
+def prepare_distance_data(calc_data):
         
     beacons_coords_list = []
     weights = []
     rssi_distances = []
     
-    for j, b in enumerate(d):
+    for j, b in enumerate(calc_data):
         if (not np.isnan(b['count'])):
             transmitter_row = df_transmitters[df_transmitters['Id'] == j+1].iloc[0]
             beacons_coords_list.append([transmitter_row['x'], transmitter_row['y']])
@@ -107,18 +107,18 @@ def calculate_monte_carlo_positions(
         estimated_positions_per_measurement[measurement_num] = np.array(current_measurement_estimated_positions)   
     return estimated_positions_per_measurement
 
-def calculate_average_positions(d):
-    beacons_coords, rssi_distances, weights = prepare_distance_data(d)
+def calculate_average_positions(calc_data):
+    beacons_coords, rssi_distances, weights = prepare_distance_data(calc_data)
     average_pos = least_square_estimation(beacons_coords, rssi_distances, weights)
     
     return average_pos[0], average_pos[1]
 
 
-def plot_area_of_function(X,Y,d,ax =None):
+def plot_area_of_function(X,Y,calc_data,ax =None):
     if ax is None:
         ax = plot_map(ax)
     
-    beacons_coords, rssi_distances, weights = prepare_distance_data(d)
+    beacons_coords, rssi_distances, weights = prepare_distance_data(calc_data)
     
     Z = np.zeros_like(X)
     for j in range(X.shape[0]):
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     for measurement_num, estimated_positions in estimated_positions_per_measurement.items():
         fig, ax = plt.subplots(figsize=(10, 10))
         ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,d=calc_data[measurement_num],ax=ax)
+        ax= plot_area_of_function(X,Y,calc_data=calc_data[measurement_num],ax=ax)
         ax = plot_estimated_positions(
             measurement_num,
             estimated_positions,
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         )
         # ax = plot_signal_strength_map(measurement_num,dfs[measurement_num], ax=ax, fig=fig)
         ax = plot_distance_from_signal(measurement_num, dfs[measurement_num], ax)
-        avg_x, avg_y = calculate_average_positions(d=calc_data[measurement_num])
+        avg_x, avg_y = calculate_average_positions(calc_data=calc_data[measurement_num])
         ax = plot_average_positions(avg_x,avg_y, ax=ax)
        
         ax.set_xlabel('Oś X (m)')
