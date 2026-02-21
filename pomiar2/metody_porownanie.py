@@ -40,7 +40,8 @@ def plot_errors_for_methods(method_folders, labels=None):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    plt.savefig("wykresy2/metody_porownanie")
+
 
 
 if __name__ == "__main__":
