@@ -7,7 +7,7 @@ from matplotlib.widgets import Slider
 from matplotlib.lines import Line2D
 
 from pomiar3.pozycje import df_positions
-from mapa_nadajniki import plot_map, df_transmitters
+from src.mapa_nadajniki import plot_map, df_transmitters
 from pomiar2.dystans_w_czasie import (
     compute_transmitter_stats,  plot_signal_strength_map, 
     load_measurements, prepare_data, plot_mesurement_position,

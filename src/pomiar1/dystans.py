@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from mapa_nadajniki import df_transmitters, plot_map
+from src.mapa_nadajniki import df_transmitters, plot_map
 from pomiar1.boxplot import dfs
 from pomiar1.regresja_liniowa import calculate_distance_from_rssi
 from pomiar1.sila_sygnalu import plot_signal_strength_map

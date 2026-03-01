@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from mapa_nadajniki import plot_transmitters_on_map
+from src.mapa_nadajniki import plot_transmitters_on_map
 from pomiar2.pozycje import plot_mesurement_position
 
 pozycjePomiaru1_path = "dane/19.09.2025_07/pozycje.txt"

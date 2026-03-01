@@ -37,8 +37,7 @@ def objective_function(position, beacons, distances_from_rssi, weights=None):
 
 
 def least_square_estimation(df, func=objective_function):
-
-
+    
     distances_from_rssi = []
     beacons_coords = []
     
@@ -63,44 +62,34 @@ def least_square_estimation(df, func=objective_function):
     return x, y
 
 
-
-
 def delta_least_square_estimation(
         df,
         last_position,
         window_step,
-        max_speed=1.4,          # m/s – wolny krok człowieka
+        max_speed=3,
         scale_factor=1,
         func=objective_function):
 
-    # 1. Estymacja LS
     x1, y1 = least_square_estimation(df, func=func)
     x0, y0 = last_position
-
-    # 2. Wektor ruchu
+    
     dx = x1 - x0
     dy = y1 - y0
 
-    # 3. Rzeczywista długość ruchu LS
     dist = np.sqrt(dx*dx + dy*dy)
 
-    # 4. Maksymalny możliwy ruch w tym oknie czasowym
     dt = window_step.total_seconds()
     max_dist = max_speed * dt
 
-    # 5. Jeśli LS proponuje ruch większy niż możliwy → przytnij
     if dist > max_dist:
         scale = max_dist / dist
     else:
         scale = 1.0
 
-    # 6. Dodatkowe wygładzanie (Twój scale_factor)
     scale *= scale_factor
 
-    # 7. Nowa pozycja
     x = x0 + dx * scale
     y = y0 + dy * scale
-
     return x, y
 
 
@@ -112,7 +101,7 @@ def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objec
                 weights=weights
             )**2)
     return result
-import numpy as np
+
 
 class EKFLocalizer:
     def __init__(self, 
@@ -337,7 +326,7 @@ def mle_estimation_wrapper(df):
 
 
 
-def universal_position_estimator(df_window, method, state_obj=None):
+def universal_position_estimator(df_window, method, state_obj=None, window_step=None, last_position=None):
     """
     method: 'LS', 'EKF', 'PF', 'MLE'
     state_obj: obiekt EKF lub PF (dla metod stanowych)
@@ -346,7 +335,7 @@ def universal_position_estimator(df_window, method, state_obj=None):
     if method == "LS":
         return least_square_estimation(df_window)
     elif method == "DLS":
-        return delta_least_square_estimation(df_window, last_position=state_obj)
+        return delta_least_square_estimation(df_window, last_position=last_position, window_step=window_step)
 
     elif method == "EKF":
         return ekf_estimation(df_window, state_obj)
