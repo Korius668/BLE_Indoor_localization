@@ -1,12 +1,13 @@
 import csv
 from datetime import timedelta
+from typing import Any
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
 import pandas as pd
 import os
 
-from estymator import EKFLocalizer, ParticleFilter, least_square_estimation, universal_position_estimator, delta_least_square_estimation
+from estymator import EKFLocalizer, ParticleFilter, least_square_estimation, universal_position_estimator, delta_least_square_estimation, DLSLocalizer
 from mapa_nadajniki import plot_map
 from pomiar2.dystans_w_czasie import compute_transmitter_stats, df, WINDOW_STEP, WINDOW_WIDTH, plot_signal_strength_map, plot_mesurement_position
 from pomiar2.pozycje import df_positions
@@ -45,45 +46,90 @@ def get_full_trajectory(df, window_width, window_step,func=least_square_estimati
     return pd.DataFrame(trajectory)
 
 
-
-def save_trajectory_plot(df, window_width,window_step=WINDOW_STEP, func=least_square_estimation, folder_path="wykresy/"):
-    os.makedirs(folder_path, exist_ok=True)
+def save_trajectory_plot(
+    df: pd.DataFrame,
+    window_width: timedelta,
+    window_step: timedelta = WINDOW_STEP,
+    func = least_square_estimation,
+    folder_path: str = "wykresy/",
+    colormap: str = 'plasma',
+    label_step_divisor: int = 20,
+    filename = None
+) -> None:
+   
+    try:
+        os.makedirs(folder_path, exist_ok=True)
+    except OSError as e:
+        raise OSError(f"Failed to create directory '{folder_path}': {e}")
+    
     df_traj = get_full_trajectory(df, window_width, window_step=window_step, func=func)
     
-    if not df_traj.empty:
-
-        fig_test, ax_test = plt.subplots(figsize=(8, 10))
-        ax_test = plot_map(ax=ax_test)
-
-        unique_positions = sorted(df_traj["position"].unique())
-        possible_colors = np.linspace(0, 1, len(unique_positions))
-        color_map = {pos: possible_colors[i] for i, pos in enumerate(unique_positions)}
-        colors = df_traj["position"].map(color_map).values
-
-        cmap = plt.get_cmap('plasma')
-
-        ax_test.plot(df_traj['x'], df_traj['y'], color='gray', alpha=0.3, lw=1)
-        scatter = ax_test.scatter(
-            df_traj['x'], df_traj['y'], 
-            c=colors, cmap=cmap, 
-            s=40, edgecolor='black', linewidth=0.3, zorder=3
+    if df_traj.empty:
+        print(f"Warning: No trajectory data generated for window {window_width}")
+        return
+    
+    required_columns = {'x', 'y', 'position'}
+    if not required_columns.issubset(df_traj.columns):
+        raise ValueError(f"Trajectory data missing required columns: {required_columns - set(df_traj.columns)}")
+    
+    fig, ax = plt.subplots(figsize=(8, 10))
+    ax = plot_map(ax=ax)
+    
+    unique_positions = sorted(df_traj["position"].unique())
+    n_positions = len(unique_positions)
+    
+    if n_positions == 0:
+        print(f"Warning: No valid positions in trajectory for window {window_width}")
+        plt.close(fig)
+        return
+    
+    position_to_index = {pos: idx + 1 for idx, pos in enumerate(unique_positions)}
+    position_indices = df_traj["position"].map(position_to_index).values
+    
+    cmap = plt.get_cmap(colormap, n_positions)
+    
+    ax.plot(
+        df_traj['x'], df_traj['y'],
+        color='gray', alpha=0.3, linewidth=1,
+        label='Trajectory path'
+    )
+    
+    scatter = ax.scatter(
+        df_traj['x'], df_traj['y'],
+        c=position_indices, cmap=cmap,
+        s=40, edgecolor='black', linewidth=0.3,
+        vmin=0.5, vmax=n_positions + 0.5,
+        zorder=3, label='Position estimates'
+    )
+    
+    n_points = len(df_traj)
+    label_step = max(1, n_points // label_step_divisor)
+    
+    for i in range(0, n_points, label_step):
+        row = df_traj.iloc[i]
+        ax.text(
+            row['x'] + 0.1, row['y'] + 0.1,
+            str(i),
+            fontsize=7, alpha=0.7
         )
-        
-        step = max(1, len(df_traj) // 20) 
-        for i in range(0, len(df_traj), step):
-            row = df_traj.iloc[i]
-            ax_test.text(row['x'] + 0.1, row['y'] + 0.1, str(i), fontsize=7)
+    colorbar = plt.colorbar(scatter, ax=ax, label='Pozycja')
+    colorbar.set_ticks(range(1, n_positions + 1))
+    colorbar.set_ticklabels([str(idx) for idx in range(1, n_positions + 1)])
 
-        plt.colorbar(scatter, ax=ax_test, label='Postęp w czasie')
-        
-        window_str = str(window_width).replace(':', '-')
-        ax_test.set_title(f"Trajektoria - okno: {window_width}")
-        
-        filename = folder_path+f"trajektoria_window_{window_str}.png"
-        plt.savefig(filename, bbox_inches='tight')
-        print(f"Zapisano: {filename}")
+    window_str = str(window_width.seconds)
+    ax.set_title(f"Trajektoeria - Okno szerokość: {window_width.seconds} sekund", fontsize=12, pad=10)
+    if filename == None:
+        filename =  f"trajektoria_window_{window_str}.png"
+    filename = os.path.join(folder_path,filename)
+    try:
+        plt.savefig(filename, bbox_inches='tight', dpi=150)
+        print(f"Successfully saved: {filename}")
+    except Exception as e:
+        print(f"Error saving plot to '{filename}': {e}")
+        raise
+    finally:
+        plt.close(fig)
 
-        plt.close(fig_test)
 
 
 
@@ -191,7 +237,8 @@ if __name__ == "__main__":
     # window_step=WINDOW_STEP,
     # output_dir="output_LS2"
     # )
-    
+
+    # dls = DLSLocalizer(df_positions["x"].iloc[0], df_positions["y"].iloc[0])
     # frames, slider_values = precompute_frames(
     # df=df,
     # df_positions=df_positions,
@@ -206,7 +253,7 @@ if __name__ == "__main__":
     # frames, slider_values = precompute_frames(
     # df=df,
     # df_positions=df_positions,
-    # func = lambda df: universal_position_estimator(df, method="EKF", state_obj=ekf),
+    # func = lambda df: universal_position_estimator(df, method="EKF", state_obj=ekf, window_step=WINDOW_STEP),
     # window_width=WINDOW_WIDTH,
     # window_step=WINDOW_STEP,
     # output_dir="output_EKF2"
@@ -236,11 +283,14 @@ if __name__ == "__main__":
     # plot_interactive_precomputed(frames, slider_values)
 
     test_windows = [
-        timedelta(seconds=1),
-        timedelta(seconds=2),
-        timedelta(seconds=5), 
-        timedelta(seconds=15), 
+        # timedelta(seconds=1),
+        # timedelta(seconds=2),
+        # timedelta(seconds=5), 
+        # timedelta(seconds=15), 
         timedelta(seconds=30)
+    ]
+    sigma = [
+        1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01
     ]
 
     for window_width in test_windows:

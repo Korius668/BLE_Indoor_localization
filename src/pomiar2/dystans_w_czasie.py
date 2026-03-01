@@ -185,14 +185,20 @@ def plot_mesurement_position(
 
     first_position_label_added = False
     first_arrow_label_added = False
+    p_x, p_y = None, None
 
     for i in range(len(df_positions)):
         x_curr = df_positions.loc[i, "x"]
         y_curr = df_positions.loc[i, "y"]
         pos_number = i + 1
         is_active = (active_position == pos_number)
-        p_x, p_y = x_curr, y_curr
-        color = "red" if is_active else "grey"
+        if is_active:
+            p_x, p_y = x_curr, y_curr
+            color = "red" 
+        else:
+
+            color = "grey"
+            
         if pd.isna(x_curr) or pd.isna(y_curr):
 
             if (
