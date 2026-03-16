@@ -22,3 +22,6 @@ output_DLS2/frame_*
 output_EKF2/frame_*
 output_PF2/frame_*
 output_MLE2/frame_*
+BLE_Indoor_localization.egg-info
+*.egg-info
+outputs
