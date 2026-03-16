@@ -1,30 +1,14 @@
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from pomiar1.sila_sygnalu import dfs
+from ble_indoor_localization import create_rssi_distance_model
+
+from .boxplot import dfs
 
 df_regression_data = pd.concat([df[['distance', 'znormalizowana moc sygnalu']] for df in dfs.values()])
 
-def model_signal_strength_vs_distance(X_log, y): 
-    model = LinearRegression()
-    model.fit(X_log, y)
-    return model
-
-log_distance = np.log10(df_regression_data['distance'])
-X_log = log_distance.values.reshape(-1, 1)
-y = df_regression_data['znormalizowana moc sygnalu']
-
-model = model_signal_strength_vs_distance(X_log, y)
-
-def calculate_distance_from_rssi(signal_strength, model=model):
-    slope = model.coef_[0]
-    intercept = model.intercept_
-
-    log_distance = (signal_strength - intercept) / slope
-    distance = np.power(10 ,log_distance)
-    return distance
+model, X_log = create_rssi_distance_model(df_regression_data)
 
 
 if __name__ == "__main__":
@@ -42,7 +26,7 @@ if __name__ == "__main__":
     plt.title('Wykres regresji liniowej: Moc sygnału vs Log10 dystans')
 
     plt.legend()
-    plt.savefig("obrazy/regresja_liniowa.png")
+    plt.savefig("docs/obrazy/regresja_liniowa.png")
     plt.show()
     
     plt.figure(figsize=(10, 6))   
@@ -60,5 +44,5 @@ if __name__ == "__main__":
     plt.title('Wykres regresji liniowej: Moc sygnału vs dystans')
 
     plt.legend()
-    plt.savefig("obrazy/regresja_liniowa2.png")
+    plt.savefig("docs/obrazy/regresja_liniowa2.png")
     plt.show()
