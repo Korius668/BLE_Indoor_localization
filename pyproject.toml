@@ -29,8 +29,9 @@ dependencies = [
     "tzdata>=2024.1"
 ]
 
+
 [tool.setuptools]
-package-dir = {"" = "src", "scripts" = "scripts"}
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["src", "scripts"]
+where = ["src"]
