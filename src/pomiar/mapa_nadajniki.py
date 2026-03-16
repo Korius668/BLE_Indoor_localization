@@ -5,6 +5,8 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 
+bounds = ([0, 0],[9.0, 27.0])
+
 mapa_path = "mapa/map4.PNG"
 pozycjeNadajnikow_path = "mapa/pozycjeNadajnikow.txt"
 reference_points = [
@@ -47,8 +49,7 @@ def plot_map(ax=None, background=background, df_transmitters=df_transmitters, re
 
     min_real_x, min_real_y = np.min(real_world_corners, axis=0)
     max_real_x, max_real_y = np.max(real_world_corners, axis=0)
-
-    ax.imshow(background, extent=[min_real_x, max_real_x, min_real_y, max_real_y])
+    ax.imshow(background, extent=(min_real_x, max_real_x, min_real_y, max_real_y))
     return ax
 
 def plot_transmitters_on_map(ax=None, background=background, df_transmitters=df_transmitters, reference_points=reference_points):
@@ -56,7 +57,7 @@ def plot_transmitters_on_map(ax=None, background=background, df_transmitters=df_
         fig, ax = plt.subplots(figsize=(4, 6))
     ax = plot_map(background=background, df_transmitters=df_transmitters, reference_points=reference_points)
     for i, row in df_transmitters.iterrows():
-        ax.text(row['x'], row['y'], str(int(row['Id'])), color='white', fontsize=8, ha='center', va='center') # Use 'Id' column for transmitter ID and cast to int
+        ax.text(row['x'], row['y'], str(row['Id']), color='white', fontsize=8, ha='center', va='center') 
 
     ax.set_title('Mapa z zaznaczonymi nadajnikami')
     ax.set_xlabel('Oś X (m)')
@@ -75,6 +76,6 @@ if __name__ == "__main__":
     print("Pozycje nadajników:")
     print(df_transmitters)
     ax = plot_transmitters_on_map()
-    plt.savefig("obrazy/rozmieszczenie_nadajnikow.png")
+    plt.savefig("docs/obrazy/rozmieszczenie_nadajnikow.png")
     plt.show()
     
