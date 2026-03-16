@@ -1,17 +1,16 @@
 import csv
 from datetime import timedelta
-from typing import Any
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
 import pandas as pd
 import os
+from tqdm import tqdm
 
-from estymator import EKFLocalizer, ParticleFilter, least_square_estimation, universal_position_estimator, delta_least_square_estimation, DLSLocalizer
-from mapa_nadajniki import plot_map
+from ble_indoor_localization.estymatory import Estimator, DLSEstimator, MLEstimator, EKFLocalizer, least_square_estimation
 from pomiar2.dystans_w_czasie import compute_transmitter_stats, df, WINDOW_STEP, WINDOW_WIDTH, plot_signal_strength_map, plot_mesurement_position
 from pomiar2.pozycje import df_positions
-
+from pomiar.mapa_nadajniki import bounds, df_transmitters, plot_map
 START_POS = (float(df_positions["x"].iloc[0]), float(df_positions["y"].iloc[0]))
 
 def plot_position(avg_pos_x, avg_pos_y , ax):  
@@ -32,16 +31,16 @@ def get_full_trajectory(df, window_width, window_step,func=least_square_estimati
     time_steps = pd.date_range(start=start_time, end=end_time, freq=window_step)
     
     trajectory = []
-    xt, yt = start_pos
-    for center in time_steps:
+    x_t, y_t = start_pos
+    for center in tqdm(time_steps, desc="Processing time steps", unit="step"):
         df_window = df[
             (df["time"] >= center - window_width/2) &
             (df["time"] <= center + window_width/2)
         ]
         active_position = df_window["position"].mode().iloc[0] if not df_window.empty else None
         if not df_window.empty:
-            xt, yt = func(df_window,(xt,yt)) if func == delta_least_square_estimation else func(df_window)
-            trajectory.append({'x': xt, 'y': yt, 'time': center, 'position': active_position})
+            x_t, y_t = func(df_window)
+            trajectory.append({'x': x_t, 'y': y_t, 'time': center, 'position': active_position})
             
     return pd.DataFrame(trajectory)
 
@@ -84,7 +83,7 @@ def save_trajectory_plot(
         return
     
     position_to_index = {pos: idx + 1 for idx, pos in enumerate(unique_positions)}
-    position_indices = df_traj["position"].map(position_to_index).values
+    position_indices = df_traj["position"].map(lambda pos: position_to_index[pos]).values
     
     cmap = plt.get_cmap(colormap, n_positions)
     
@@ -96,7 +95,7 @@ def save_trajectory_plot(
     
     scatter = ax.scatter(
         df_traj['x'], df_traj['y'],
-        c=position_indices, cmap=cmap,
+        c=position_indices.tolist(), cmap=cmap,
         s=40, edgecolor='black', linewidth=0.3,
         vmin=0.5, vmax=n_positions + 0.5,
         zorder=3, label='Position estimates'
@@ -105,7 +104,7 @@ def save_trajectory_plot(
     n_points = len(df_traj)
     label_step = max(1, n_points // label_step_divisor)
     
-    for i in range(0, n_points, label_step):
+    for i in tqdm(range(0, n_points, label_step), desc="Adding labels", unit="label"):
         row = df_traj.iloc[i]
         ax.text(
             row['x'] + 0.1, row['y'] + 0.1,
@@ -151,7 +150,7 @@ def generate_frame(df, df_positions, center_time, window_width, func=least_squar
         end_t_pos = df[df["position"] == active_position]["time"].max()
         part_position = (center_time - begin_t_pos).value / (end_t_pos - begin_t_pos).value
         transmitter_stats = compute_transmitter_stats(df_window)
-        x_t, y_t = func(df_window,(x_t,y_t)) if func == delta_least_square_estimation else func(df_window)
+        x_t, y_t = func(df_window)
 
     fig, ax = plt.subplots(figsize=(6, 10))
     ax = plot_map(ax=ax)
@@ -174,8 +173,8 @@ def generate_frame(df, df_positions, center_time, window_width, func=least_squar
     ax.set_ylim(ylim)
     fig.canvas.draw()
 
-    buf = fig.canvas.buffer_rgba() 
-  
+    buf = fig.canvas.buffer_rgba()  # type: ignore[attr-defined]
+   
     image = np.asarray(buf, dtype=np.uint8)[..., :3]
 
     plt.close(fig)
@@ -196,15 +195,14 @@ def precompute_frames(df, df_positions,  window_width, window_step, func=least_s
 
     frames = []
     x_t, y_t = start_pos
-    for i, t in enumerate(slider_values):
-        print(f"Przetwarzanie klatki {i+1}/{len(slider_values)} - czas: {t:.2f} s")
+    for i, t in enumerate(tqdm(slider_values, desc="Generating frames", unit="frame")):
         center_time = t0 + timedelta(seconds=t)
         frame, x_t, y_t, active_position, p_x, p_y = generate_frame(df, df_positions, center_time, window_width, func=func, last_position=(x_t, y_t))
 
         frames.append(frame)
         plt.imsave(f"{output_dir}/frame_{i:04d}.png", frame)
-        with open(output_dir+"/pozycje.csv", "a", newline="") as f: 
-            writer = csv.writer(f) 
+        with open(output_dir+"/pozycje.csv", "a", newline="") as f:
+            writer = csv.writer(f)
             writer.writerow([ i, center_time.isoformat(), active_position, x_t, y_t, p_x, p_y ])
 
     return frames, slider_values
@@ -215,7 +213,7 @@ def plot_interactive_precomputed(frames, slider_values):
     img = ax.imshow(frames[0])
     ax.axis("off")
    
-    ax_slider = plt.axes([0.15, 0.05, 0.7, 0.03])
+    ax_slider = plt.axes((0.15, 0.05, 0.7, 0.03))
     slider = Slider(ax_slider, "czas [s]", 0, len(frames)-1, valinit=0, valstep=1)
 
     def update(val):
@@ -238,15 +236,15 @@ if __name__ == "__main__":
     # output_dir="output_LS2"
     # )
 
-    # dls = DLSLocalizer(df_positions["x"].iloc[0], df_positions["y"].iloc[0])
-    # frames, slider_values = precompute_frames(
-    # df=df,
-    # df_positions=df_positions,
-    # func = lambda df, last_position=START_POS: universal_position_estimator(df, method="DLS", window_step=WINDOW_STEP, last_position=last_position),
-    # window_width=WINDOW_WIDTH,
-    # window_step=WINDOW_STEP,
-    # output_dir="output_DLS2"
-    # )
+    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
+    frames, slider_values = precompute_frames(
+    df=df,
+    df_positions=df_positions,
+    func = dls.estymation,
+    window_width=WINDOW_WIDTH,
+    window_step=WINDOW_STEP,
+    output_dir="outputs/output_DLS2"
+    )
 
     # ekf = EKFLocalizer(initial_position=START_POS)
     
@@ -281,26 +279,15 @@ if __name__ == "__main__":
     
     
     # plot_interactive_precomputed(frames, slider_values)
+    # save_trajectory_plot(df, window_width, folder_path="wykresy2_LS/", func=least_square_estimation)
 
-    test_windows = [
-        # timedelta(seconds=1),
-        # timedelta(seconds=2),
-        # timedelta(seconds=5), 
-        # timedelta(seconds=15), 
-        timedelta(seconds=30)
-    ]
-    sigma = [
-        1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01
-    ]
+    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
+    save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_DLS/", filename=f"DLS.png",
+                        func = dls.estymation
+                        )
 
-    for window_width in test_windows:
-        # save_trajectory_plot(df, window_width, folder_path="wykresy2_LS/", func=least_square_estimation)
-        save_trajectory_plot(df, window_width, folder_path="wykresy2_DLS/", 
-                            func = lambda df, last_position=START_POS: universal_position_estimator(df, method="DLS", window_step=WINDOW_STEP, last_position=last_position)
-                            )
-
-        # ekf = EKFLocalizer(initial_position=START_POS)
-        # save_trajectory_plot(df, window_width, folder_path="wykresy2_EKF/", func = lambda df: universal_position_estimator(df, method="EKF", state_obj=ekf))
-        # pf = ParticleFilter()
-        # save_trajectory_plot(df, window_width, folder_path="wykresy2_PF/", func = lambda df: universal_position_estimator(df, method="PF", state_obj=pf))
-        # save_trajectory_plot(df, window_width, folder_path="wykresy2_MLE/", func = lambda df: universal_position_estimator(df, method="MLE"))
+    # ekf = EKFLocalizer(initial_position=START_POS)
+    # save_trajectory_plot(df, window_width, folder_path="wykresy2_EKF/", func = ekf.estimation)
+    # pf = ParticleFilter()
+    # save_trajectory_plot(df, window_width, folder_path="wykresy2_PF/", func = lambda df: universal_position_estimator(df, method="PF", state_obj=pf))
+    # save_trajectory_plot(df, window_width, folder_path="wykresy2_MLE/", func = lambda df: universal_position_estimator(df, method="MLE"))

@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from matplotlib.lines import Line2D
 
-from estymator import calculate_distance_from_rssi
+from ble_indoor_localization.estymatory.least_square import calculate_distance_from_rssi
 from pomiar2.pozycje import df_positions
-from mapa_nadajniki import plot_map, df_transmitters
+from pomiar.mapa_nadajniki import plot_map, df_transmitters
 
 id_mapping = {
     ' 00:00:00:00:00:01': '1',
@@ -25,7 +25,7 @@ id_mapping = {
     ' 00:00:00:00:00:12': '12'
 }
 
-folder_path = Path("dane/19.09.2025_06/")
+folder_path = Path("data/19.09.2025_06/")
 WINDOW_STEP = timedelta(seconds=0.5)
 WINDOW_WIDTH = timedelta(seconds=2)
 
@@ -61,6 +61,9 @@ def parse_filename(filename: str):
     return position, motion
 
 def load_measurements(folder: Path):
+    if not folder.exists():
+        raise FileNotFoundError(f"Folder does not exist: {folder}")
+    
     all_dfs = []
 
     for file in folder.glob("*.txt"):
@@ -76,10 +79,13 @@ def load_measurements(folder: Path):
 
         df["position"] = position
         df["motion"] = motion
-        df["source_file"] = file.name  # opcjonalnie
+        df["source_file"] = file.name
 
         all_dfs.append(df)
 
+    if not all_dfs:
+        raise ValueError(f"No valid measurement files found in {folder}")
+    
     return pd.concat(all_dfs, ignore_index=True)
 
 def prepare_data(df):
@@ -389,4 +395,4 @@ df = prepare_data(df)
 
 if __name__ == "__main__":
     plot_interactive_map(df, window_width=WINDOW_WIDTH, window_step=WINDOW_STEP)
-    save_probki_w_czasie_plot(df, WINDOW_WIDTH, WINDOW_STEP, save_path='wykresy2/probki_w_czasie.png')
+    save_probki_w_czasie_plot(df, WINDOW_WIDTH, WINDOW_STEP, save_path='diagrams/wykresy2/probki_w_czasie.png')

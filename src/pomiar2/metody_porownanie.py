@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_errors_for_methods(method_folders, labels=None):
+def plot_errors_for_methods(method_folders, labels=None, path=None):
     """
     method_folders: lista folderów np. ["output_LS2", "output_EKF", "output_PF"]
     labels: opcjonalne nazwy metod do legendy
@@ -11,6 +11,8 @@ def plot_errors_for_methods(method_folders, labels=None):
 
     if labels is None:
         labels = method_folders
+    if path is not None:
+        method_folders = [os.path.join(path, folder) for folder in method_folders]
 
     plt.figure(figsize=(12, 6))
 
@@ -40,12 +42,13 @@ def plot_errors_for_methods(method_folders, labels=None):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("wykresy2/metody_porownanie")
+    plt.savefig("diagrams/wykresy2/metody_porownanie")
 
 
 
 if __name__ == "__main__":
     plot_errors_for_methods(
-    ["output_LS2", "output_DLS2", "output_EKF2", "output_PF2", "output_MLE2"],
-    labels=["Najmniejszych kwadratow", "Roznica najmniejszych kwadratow", "Rozszerzony filtr Kalmana", "Sekwencyjna metoda Monte Carlo", "Metoda Największej Wiarygodności"]
+    method_folders=["output_LS2", "output_DLS2", "output_EKF2", "output_PF2", "output_MLE2"],
+    labels=["Najmniejszych kwadratow", "Roznica najmniejszych kwadratow", "Rozszerzony filtr Kalmana", "Sekwencyjna metoda Monte Carlo", "Metoda Największej Wiarygodności"],
+    path="outputs"
 )
