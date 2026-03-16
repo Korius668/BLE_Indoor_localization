@@ -1,5 +1,7 @@
-import imageio
 import os
+
+import imageio
+
 
 def create_gif_from_png(filename, output_folder, fps=10):
     # Always save to gif/ directory from repository root
