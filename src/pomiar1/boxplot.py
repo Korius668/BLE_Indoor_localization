@@ -1,39 +1,22 @@
-import math
+import os
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-import numpy as np
 
-from pomiar1.pozycje import df_positions
-from mapa_nadajniki import df_transmitters
+from pomiar import df_transmitters, id_mapping
+from ble_indoor_localization.calculations import calculate_euclidean_distance
 
-def calculate_euclidean_distance(x1, y1, x2, y2):
-    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+from .pozycje import df_positions, pomiar1_data_path
 
+signals_path = [os.path.join(pomiar1_data_path, f"{i}_100.txt") for i in range(1, 12)]
 
-df_combined = pd.DataFrame()
-pozycjePomiaru1_paths = [f"dane/19.09.2025_01/{i}_100.txt" for i in range(1, 12)]
-
-id_mapping = {
-    ' 00:00:00:00:00:01': '1',
-    ' 00:00:00:00:00:02': '2',
-    ' 00:00:00:00:00:03': '3',
-    ' 00:00:00:00:00:04': '4',
-    ' 00:00:00:00:00:05': '5',
-    ' 06:00:00:00:00:00': '6',
-    ' 07:00:00:00:00:00': '7',
-    ' 08:00:00:00:00:00': '8',
-    ' 09:00:00:00:00:00': '9',
-    ' 00:00:00:00:00:10': '10', 
-    ' 00:00:00:00:00:11': '11',
-    ' 00:00:00:00:00:12': '12'
-}
 transmitter_order = list(id_mapping.values())
 
 
-def read_pomiar1_data(pozycjePomiaru1_paths= pozycjePomiaru1_paths, df_transmitters = df_transmitters):
+def read_pomiar1_data(signals_path, df_transmitters):
     dfs = {}
 
-    for i, file_path in enumerate(pozycjePomiaru1_paths):
+    for i, file_path in enumerate(signals_path):
         df_temp = pd.read_csv(file_path, header=None, names=['data', 'id nadajnika', 'wzmocnienie', 'moc sygnalu'])
         df_temp['data'] = pd.to_datetime(df_temp['data'])
 
@@ -60,7 +43,7 @@ def read_pomiar1_data(pozycjePomiaru1_paths= pozycjePomiaru1_paths, df_transmitt
         dfs[i+1] = df_temp
     return dfs
 
-dfs = read_pomiar1_data(pozycjePomiaru1_paths, df_transmitters)
+dfs = read_pomiar1_data(signals_path, df_transmitters)
 
 
 def calc_boxplot_data(transmitter_order=transmitter_order, dfs=dfs):    
@@ -162,7 +145,7 @@ def plot_boxplots(calc_data, dfs, transmitter_order, positions):
         plt.text(len(transmitter_order), -97, f'Wszystkich próbek: {total_count}', ha='right')
         # plt.tight_layout()
         plt.ylim(-100, -40)
-        plt.savefig(f"obrazy/boxplot_rssi_pozycja_{measurement_name}.png")
+        plt.savefig(f"docs/obrazy/boxplot_rssi_pozycja_{measurement_name}.png")
     return fig
 
 if __name__ == "__main__":
