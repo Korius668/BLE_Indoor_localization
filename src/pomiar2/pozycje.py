@@ -1,10 +1,11 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-from mapa_nadajniki import plot_transmitters_on_map
+import pandas as pd
 
+from pomiar import plot_transmitters_on_map
 
-pozycjePomiaru1_path = "dane/19.09.2025_06/pozycje.txt"
-df_positions = pd.read_csv(pozycjePomiaru1_path, header="infer", names=None)
+pomiar2_data_path = "data/19.09.2025_06/"
+pozycje_path = pomiar2_data_path + "pozycje.txt"
+df_positions = pd.read_csv(pozycje_path, header="infer", names=None)
 
 
 def plot_mesurement_position(ax=None, df_positions=df_positions):
@@ -93,9 +94,9 @@ def plot_mesurement_position(ax=None, df_positions=df_positions):
 
 
 if __name__ == "__main__":
-    print("Pozycje pomiarów 1:")
+    print("Pozycje pomiarów 2:")
     print(df_positions)
     ax = plot_transmitters_on_map()
     ax = plot_mesurement_position(ax)
-    plt.savefig(f"obrazy/pozycje_pomiar2.png")
+    plt.savefig(f"docs/obrazy/pozycje_pomiar2.png")
     plt.show()
