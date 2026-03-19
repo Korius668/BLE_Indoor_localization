@@ -1,8 +1,8 @@
-import pandas as pd
 import numpy as np
-from ble_indoor_localization.calculations import calculate_euclidean_distance
-from mapa_nadajniki import pozycjeNadajnikow_path
+import pandas as pd
+from .mapa_nadajniki import pozycje_nadajnikow_path
 
+from ble_indoor_localization.calculations import calculate_euclidean_distance
 
 id_mapping = {
     ' 00:00:00:00:00:01': '1',
@@ -20,7 +20,7 @@ id_mapping = {
 }
 
 transmitter_order = list(id_mapping.values())
-df_transmitters = pd.read_csv(pozycjeNadajnikow_path, header="infer", names=None)
+df_transmitters = pd.read_csv(pozycje_nadajnikow_path, header="infer", names=None)
 
 def read_pomiar_data(file_paths, df_positions, df_transmitters):
     """
