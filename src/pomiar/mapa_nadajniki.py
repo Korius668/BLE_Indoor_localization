@@ -1,21 +1,20 @@
-import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
-
 
 bounds = ([0, 0],[9.0, 27.0])
 
 mapa_path = "mapa/map4.PNG"
-pozycjeNadajnikow_path = "mapa/pozycjeNadajnikow.txt"
+pozycje_nadajnikow_path = "mapa/pozycjeNadajnikow.txt"
 reference_points = [
         ((125, 800), (0, 0)),
         ((205,800),( 2.8,0)),
         ((140, 30),  (0.35, 27)),
     ]
 
-df_transmitters = pd.read_csv(pozycjeNadajnikow_path, header="infer", names=None)
+df_transmitters = pd.read_csv(pozycje_nadajnikow_path, header="infer", names=None)
 background = mpimg.imread(mapa_path)
 
 def image_to_real_coords_affine(image_x, image_y, M_inv, c, f):

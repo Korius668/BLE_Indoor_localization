@@ -1,57 +1,23 @@
-from scipy.optimize import least_squares
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.optimize import least_squares
 
-from pomiar1.generowanie_pozycji import generate_samples
-from pomiar1.boxplot import calc_data, dfs, transmitter_order
-from pomiar1.dystans import plot_distance_from_signal
-from pomiar1.regresja_liniowa import calculate_distance_from_rssi
-from pomiar1.least_square import distance_between_2_points, prepare_distance_data
-from mapa_nadajniki import df_transmitters, plot_map
-from pomiar1.pozycje import df_positions
+from ble_indoor_localization import  plot_distance_from_signal, calculate_distance_from_rssi, generate_samples, distance_between_2_points, prepare_distance_data,objective_function, objective_function_normalized
+from pomiar import df_transmitters, plot_map
 
-def objective_function1(position, beacons, distances_from_rssi, weights=None):
-    x, y = position
-    geometrical_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
-    residuals =0
-    if weights is None:
-        residuals = geometrical_distances - distances_from_rssi
-    else:        
-        residuals = weights*(geometrical_distances - distances_from_rssi)
-    return residuals
-
-def objective_function2(position, beacons, distances_from_rssi, weights=None):
-    x, y = position
-    geometrical_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
-    residuals =0
-    if weights is None:
-        residuals = geometrical_distances - distances_from_rssi
-    else:        
-        residuals = weights*(geometrical_distances - distances_from_rssi)
-    return residuals/distances_from_rssi
-
-
-
-def least_square_estimation(beacons_coords, distances_from_rssi, weights=None, func=objective_function1):
-    min_real_x_loc, min_real_y_loc = -10, -10
-    max_real_x_loc, max_real_y_loc = 20.0, 27.0
-    random_x = np.random.uniform(min_real_x_loc, max_real_x_loc)
-    random_y = np.random.uniform(min_real_y_loc, max_real_y_loc)
-    
-    initial_guess = np.array([random_x,random_y])
-    position = least_squares(
-        func,
-        initial_guess,
-        args=(beacons_coords, distances_from_rssi, weights)
+from .boxplot import (
+    calc_data, 
+    dfs, 
+    transmitter_order, 
+    df_positions
     )
-    return position.x, position.cost
 
 
 def calculate_monte_carlo_positions(
     samples,
     cnt = 100,
-    func=objective_function1,
+    func=objective_function,
     w_flag=False
 ):
     
@@ -95,7 +61,7 @@ def calculate_monte_carlo_positions(
 
 
 
-def calculate_average_positions(calc_data, func=objective_function1, w_flag=False):
+def calculate_average_positions(calc_data, func=objective_function, w_flag=False):
     beacons_coords, rssi_distances, weights = prepare_distance_data(calc_data)
     if not w_flag:
         weights = None
@@ -104,7 +70,7 @@ def calculate_average_positions(calc_data, func=objective_function1, w_flag=Fals
     
     return average_pos[0], average_pos[1], cost
 
-def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objective_function1):
+def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objective_function):
     result = 0.5*np.sum(func(
                 (x,y), 
                 beacons_coords, 
@@ -113,7 +79,7 @@ def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objec
             )**2)
     return result
     
-def plot_area_of_objective_function(X,Y,d,ax =None, func=objective_function1, w_flag=False):
+def plot_area_of_objective_function(X,Y,d,ax =None, func=objective_function, w_flag=False):
     if ax is None:
         ax = plot_map(ax)
     
@@ -199,37 +165,37 @@ if __name__ == "__main__":
     X, Y = np.meshgrid(x_range, y_range)
     cnt = 50
     samples = generate_samples(cnt)
-    estimated_positions_1 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function1)
-    estimated_positions_2 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function2)
-    estimated_positions_3 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function1,  w_flag=True)
-    estimated_positions_4 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function2,  w_flag=True) 
+    estimated_positions_1 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function)
+    estimated_positions_2 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function_normalized)
+    estimated_positions_3 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function,  w_flag=True)
+    estimated_positions_4 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function_normalized,  w_flag=True) 
     
     methods_config = [
     {
         "method": "Zwykla",
         "subplot": 1,
-        "func": objective_function1,
+        "func": objective_function,
         "estimated_positions": estimated_positions_1,
         "w_flag": False
     },
     {
         "method": "Dzielona przez odległość od rssi",
         "subplot": 2,
-        "func": objective_function2,
+        "func": objective_function_normalized,
         "estimated_positions": estimated_positions_2,
         "w_flag": False
     },
     {
         "method": "Zwykla z wagami",
         "subplot": 3,
-        "func": objective_function1,
+        "func": objective_function,
         "estimated_positions": estimated_positions_3,
         "w_flag": True
     },
     {
         "method": "Dzielona przez odległość od rssi z wagami",
         "subplot": 4,
-        "func": objective_function2,
+        "func": objective_function_normalized,
         "estimated_positions": estimated_positions_4,
         "w_flag": True
     }]
