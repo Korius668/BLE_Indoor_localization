@@ -1,0 +1,1 @@
+from .regresja_liniowa import model
