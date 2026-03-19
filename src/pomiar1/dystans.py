@@ -1,3 +1,6 @@
+from typing import Any, Callable
+
+
 import matplotlib.pyplot as plt
 
 from ble_indoor_localization import (
@@ -14,7 +17,7 @@ if __name__ == "__main__":
     for measurement_name, df_measurement in dfs.items():
         fig, ax = plt.subplots(figsize=(8, 8))
         ax= plot_map()
-        func = lambda rssi: calculate_distance_from_rssi(rssi, model)
+        func: Callable[..., Any] = lambda rssi: calculate_distance_from_rssi(rssi, model)
         plot_distance_from_signal(measurement_name, df_measurement, df_transmitters, calculate_distance_func=func,  ax=ax)
         ax.set_ylim(-10, 42)
         ax.set_xlim(-20, 20)
