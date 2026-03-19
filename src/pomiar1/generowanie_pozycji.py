@@ -1,31 +1,14 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import norm 
+from scipy.stats import norm
 
-from pomiar1.boxplot import calc_data, transmitter_order, dfs
-
-
+from ble_indoor_localization import generate_samples
+from .boxplot import calc_data, dfs, transmitter_order
 
 n_samples = 10000
 Sigma = 7
 
-def generate_samples(n_samples = n_samples):
-    samples = {}
-    np.random.seed(1)  # For reproducibility
-    for i, d in calc_data.items():
-        s={}
-        for b in d:
-            if (not np.isnan(b['avg'])):
-                AVG = b['avg']
-                # STD = b['std']
-
-                s[b["label"]] = np.random.normal(loc=AVG, scale=Sigma, size=n_samples)
-
-        samples[i] = s
-    return samples
-
-samples = generate_samples()
+samples = generate_samples(calc_data, n_samples, Sigma)
 
 if __name__ == "__main__":
 
@@ -90,5 +73,5 @@ if __name__ == "__main__":
 
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Adjust layout to make space for suptitle
-        plt.savefig(f"obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_{measurement_name}.png")
+        plt.savefig(f"docs/obrazy/rozrzut_wygenowanych_probek_odleglosci_pozycji_{measurement_name}.png")
     plt.show()
