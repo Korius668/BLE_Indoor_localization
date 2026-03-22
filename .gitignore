@@ -24,4 +24,6 @@ output_PF2/frame_*
 output_MLE2/frame_*
 BLE_Indoor_localization.egg-info
 *.egg-info
-outputs
+outputs/*
+gifs/*
+diagrams/*
