@@ -5,30 +5,18 @@ This package provides utilities for indoor localization using BLE beacons.
 """
 from datetime import timedelta
 
-
-from .calculations import (
-    distance_between_2_points,
-    create_rssi_distance_model,
-    calculate_distance_from_rssi,
-    objective_function,
-    objective_function_normalized,
-    prepare_distance_data,
-    least_square_estimation,
-    value_of_objective_function,
-    generate_samples
-)
-
-from .plotting import (
-    plot_mesurement_position,
-    plot_signal_strength_map,
-    plot_distance_from_signal,
-    plot_area_of_objective_function,
-    plot_average_positions,
-    plot_estimated_positions,
-    plot_boxplots
-)
-
-from .estymatory import Estimator
+from .calculations import (calculate_distance_from_rssi,
+                           create_rssi_distance_model,
+                           distance_between_2_points, generate_samples,
+                           objective_function,
+                           objective_function_normalized,
+                           prepare_distance_data, value_of_objective_function)
+from .estymatory import D2LSEstimator,DLSEstimator, EKFLocalizer, Estimator, MLEstimator,least_square_estimation
+from .plotting import (plot_area_of_objective_function, plot_average_positions,
+                       plot_boxplots, plot_distance_from_signal,
+                       plot_estimated_positions, plot_measurement_positions,
+                       plot_signal_strength_map,
+                       save_probki_w_czasie_plot, plot_active_measurement_position)
 
 # Constants
 WINDOW_STEP = timedelta(seconds=0.5)
@@ -59,12 +47,14 @@ __all__ = [
     'generate_samples',
     
     # Plotting
-    'plot_mesurement_position',
+    'plot_measurement_positions',
     'plot_signal_strength_map',
     'plot_distance_from_signal',
     'plot_area_of_objective_function',
     'plot_average_positions',
     'plot_estimated_positions',
     'plot_boxplots',
+    "save_probki_w_czasie_plot",
+    "plot_active_measurement_position",
 ]
 

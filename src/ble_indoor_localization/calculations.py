@@ -1,11 +1,6 @@
-"""
-Calculation utilities for BLE Indoor Localization project.
-Includes distance calculations, regression models, and position estimation.
-"""
 import numpy as np
-from scipy.optimize import least_squares
 from sklearn.linear_model import LinearRegression
-
+import math
 
 
 def calculate_euclidean_distance(x1, y1, x2, y2):
@@ -53,7 +48,7 @@ def create_rssi_distance_model(df_regression_data):
     
     model = LinearRegression()
     model.fit(X_log, y)
-    return model
+    return model, X_log
 
 
 def calculate_distance_from_rssi(signal_strength, model):
@@ -136,7 +131,9 @@ def objective_function_normalized(position, beacons, distances_from_rssi, weight
     
     if weights is not None:
         residuals = weights * residuals
-    
+    else:        
+        residuals = weights*(geometrical_distances - distances_from_rssi)
+
     return residuals / distances_from_rssi
 
 
@@ -156,7 +153,7 @@ def prepare_distance_data(calc_data, df_transmitters):
     tuple
         (beacons_coords, rssi_distances, weights)
     """
-    from .calculations import calculate_distance_from_rssi
+    
     
     beacons_coords_list = []
     weights = []
@@ -179,50 +176,6 @@ def prepare_distance_data(calc_data, df_transmitters):
     beacons_coords = np.array(beacons_coords_list)
     
     return beacons_coords, np.array(rssi_distances), weights
-
-
-def least_square_estimation(beacons_coords, distances_from_rssi, weights=None, 
-                           func=None, bounds=None):
-    """
-    Estimate position using least squares optimization.
-    
-    Parameters:
-    -----------
-    beacons_coords : array-like
-        Nx2 array of beacon coordinates
-    distances_from_rssi : array-like
-        Distances estimated from RSSI
-    weights : array-like, optional
-        Weights for each beacon
-    func : callable, optional
-        Objective function to use (default: objective_function)
-    bounds : tuple, optional
-        Bounds for optimization (min_x, min_y, max_x, max_y)
-        
-    Returns:
-    --------
-    tuple
-        (position, cost) where position is [x, y]
-    """
-    if func is None:
-        func = objective_function
-    
-    if bounds is None:
-        min_real_x_loc, min_real_y_loc = -10, -10
-        max_real_x_loc, max_real_y_loc = 20.0, 27.0
-    else:
-        min_real_x_loc, min_real_y_loc, max_real_x_loc, max_real_y_loc = bounds
-    
-    random_x = np.random.uniform(min_real_x_loc, max_real_x_loc)
-    random_y = np.random.uniform(min_real_y_loc, max_real_y_loc)
-    
-    initial_guess = np.array([random_x, random_y])
-    result = least_squares(
-        func,
-        initial_guess,
-        args=(beacons_coords, distances_from_rssi, weights)
-    )
-    return result.x, result.cost
 
 
 def value_of_objective_function(x, y, beacons_coords, d_input, weights, func=None):
@@ -298,9 +251,6 @@ __all__ = [
     'objective_function',
     'objective_function_normalized',
     'prepare_distance_data',
-    'least_square_estimation',
     'value_of_objective_function',
     'generate_samples'
 ]
-
-# Made with Bob
