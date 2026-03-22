@@ -19,8 +19,8 @@ def create_gif_from_png(filename, output_folder, fps=10):
     imageio.mimsave(output_path, images, fps=fps)
 
 if __name__ == "__main__":
-    create_gif_from_png("LS2.gif","output_LS2",fps=5)
-    create_gif_from_png("DLS2.gif","output_DLS2",fps=5)
-    create_gif_from_png("EKF2.gif","output_EKF2",fps=5)
-    create_gif_from_png("PF2.gif","output_PF2",fps=5)
-    create_gif_from_png("MLE2.gif","output_MLE2",fps=5)
+    create_gif_from_png("LS2.gif","output_LS",fps=5)
+    create_gif_from_png("DLS2.gif","output_DLS",fps=5)
+    create_gif_from_png("EKF2.gif","output_EKF",fps=5)
+    create_gif_from_png("PF2.gif","output_PF",fps=5)
+    create_gif_from_png("MLE2.gif","output_MLE",fps=5)
