@@ -1,9 +1,8 @@
 from datetime import timedelta
 
 from pomiar2.pozycja_w_czasie import plot_interactive_map, save_trajectory_plot
+from pomiar3.dystans_w_czasie import WINDOW_STEP, WINDOW_WIDTH, df
 from pomiar3.pozycje import df_positions
-from pomiar3.dystans_w_czasie import df, WINDOW_STEP, WINDOW_WIDTH
-
 
 if __name__ == "__main__":
     plot_interactive_map(df, df_positions=df_positions, window_width=WINDOW_WIDTH, window_step=WINDOW_STEP)
