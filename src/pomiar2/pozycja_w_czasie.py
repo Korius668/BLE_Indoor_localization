@@ -1,41 +1,43 @@
 import csv
+import os
 from datetime import timedelta
+
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 import numpy as np
 import pandas as pd
-import os
+from matplotlib.widgets import Slider
 from tqdm import tqdm
 
-from ble_indoor_localization.estymatory import Estimator, DLSEstimator, MLEstimator, EKFLocalizer, least_square_estimation
-from pomiar2.dystans_w_czasie import compute_transmitter_stats, df, WINDOW_STEP, WINDOW_WIDTH, plot_signal_strength_map, plot_mesurement_position
-from pomiar2.pozycje import df_positions
-from pomiar.mapa_nadajniki import bounds, df_transmitters, plot_map
+from ble_indoor_localization import (DLSEstimator, 
+                                     D2LSEstimator,
+                                     EKFLocalizer,
+                                     Estimator, 
+                                     MLEstimator,
+                                     least_square_estimation,
+                                     plot_average_positions,
+                                     plot_active_measurement_position                                     
+                                     )
+from ble_indoor_localization.plotting import plot_signal_strength_map
+from .dystans_w_czasie import (WINDOW_STEP, WINDOW_WIDTH,
+                                    df,
+                                      )
+from .pozycje import df_positions
+from pomiar import bounds, df_transmitters, plot_map
+
 START_POS = (float(df_positions["x"].iloc[0]), float(df_positions["y"].iloc[0]))
 
-def plot_position(avg_pos_x, avg_pos_y , ax):  
-    ax.scatter(
-        avg_pos_x, avg_pos_y,
-        color='orange',
-        alpha=0.9,
-        s=120,
-        marker='v',
-        label=f'Pozycja wyliczona: {avg_pos_x:.2f}, {avg_pos_y:.2f}'
-    )
-    return ax
 
-
-def get_full_trajectory(df, window_width, window_step,func=least_square_estimation, start_pos=START_POS):
-    start_time = df["time"].min()
-    end_time = df["time"].max()
+def get_full_trajectory(df, window_width, window_step, func, start_pos=START_POS):
+    start_time = df["data"].min()
+    end_time = df["data"].max()
     time_steps = pd.date_range(start=start_time, end=end_time, freq=window_step)
     
     trajectory = []
     x_t, y_t = start_pos
     for center in tqdm(time_steps, desc="Processing time steps", unit="step"):
         df_window = df[
-            (df["time"] >= center - window_width/2) &
-            (df["time"] <= center + window_width/2)
+            (df["data"] >= center - window_width/2) &
+            (df["data"] <= center + window_width/2)
         ]
         active_position = df_window["position"].mode().iloc[0] if not df_window.empty else None
         if not df_window.empty:
@@ -130,26 +132,22 @@ def save_trajectory_plot(
         plt.close(fig)
 
 
-
-
-def generate_frame(df, df_positions, center_time, window_width, func=least_square_estimation, last_position=START_POS):
+def generate_frame(df, df_positions, center_time, window_width, func, last_position=START_POS):
     df_window = df[
-        (df["time"] >= center_time - window_width/2) &
-        (df["time"] <= center_time + window_width/2)
+        (df["data"] >= center_time - window_width/2) &
+        (df["data"] <= center_time + window_width/2)
     ]
     
     x_t, y_t = last_position
     if df_window.empty:
         active_position = None
         part_position = None
-        transmitter_stats = None
         x_t = y_t = None
     else:
         active_position = df_window["position"].mode().iloc[0]
-        begin_t_pos = df[df["position"] == active_position]["time"].min()
-        end_t_pos = df[df["position"] == active_position]["time"].max()
+        begin_t_pos = df[df["position"] == active_position]["data"].min()
+        end_t_pos = df[df["position"] == active_position]["data"].max()
         part_position = (center_time - begin_t_pos).value / (end_t_pos - begin_t_pos).value
-        transmitter_stats = compute_transmitter_stats(df_window)
         x_t, y_t = func(df_window)
 
     fig, ax = plt.subplots(figsize=(6, 10))
@@ -157,18 +155,19 @@ def generate_frame(df, df_positions, center_time, window_width, func=least_squar
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
 
-    _,p_x, p_y = plot_mesurement_position(ax=ax, df_positions=df_positions,
+    _,p_x, p_y = plot_active_measurement_position(df_positions=df_positions, ax=ax,
                              active_position=active_position,
                              part_position=part_position)
 
     if active_position is not None:
         plot_signal_strength_map(
-            transmitter_stats=transmitter_stats,
+            df_window,
+            df_transmitters,
             ax=ax,
             fig=fig,
             c_flag=False
         )
-        plot_position(x_t, y_t, ax=ax)
+        plot_average_positions(x_t, y_t, ax=ax)
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     fig.canvas.draw()
@@ -189,8 +188,8 @@ def precompute_frames(df, df_positions,  window_width, window_step, func=least_s
         writer.writerow([ "l.p.", "czas", "pozycja", "x_estymowane", "y_estymowane", "x_prawdziwe", "y_prawdziwe" ])
     
     
-    t0 = df["time"].min()
-    times_sec = (df["time"] - t0).dt.total_seconds()
+    t0 = df["data"].min()
+    times_sec = (df["data"] - t0).dt.total_seconds()
     slider_values = np.arange(times_sec.min(), times_sec.max()+1, window_step.total_seconds())
 
     frames = []
@@ -230,31 +229,40 @@ if __name__ == "__main__":
     # frames, slider_values = precompute_frames(
     # df=df,
     # df_positions=df_positions,
-    # func = least_square_estimation,
+    # func = lambda df: least_square_estimation(df, df_transmitters, bounds),
     # window_width=WINDOW_WIDTH,
     # window_step=WINDOW_STEP,
-    # output_dir="output_LS2"
+    # output_dir="outputs/output_LS"
     # )
 
-    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
-    frames, slider_values = precompute_frames(
-    df=df,
-    df_positions=df_positions,
-    func = dls.estymation,
-    window_width=WINDOW_WIDTH,
-    window_step=WINDOW_STEP,
-    output_dir="outputs/output_DLS2"
-    )
+    # dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
+    # frames, slider_values = precompute_frames(
+    # df=df,
+    # df_positions=df_positions,
+    # func = dls.estymation,
+    # window_width=WINDOW_WIDTH,
+    # window_step=WINDOW_STEP,
+    # output_dir="outputs/output_DLS"
+    # )
 
-    # ekf = EKFLocalizer(initial_position=START_POS)
-    
+    # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
+    # frames, slider_values = precompute_frames(
+    # df=df,
+    # df_positions=df_positions,
+    # func = d2ls.estymation,
+    # window_width=WINDOW_WIDTH,
+    # window_step=WINDOW_STEP,
+    # output_dir="outputs/output_D2LS"
+    # )
+
+    # ekf = EKFLocalizer(initial_position=START_POS)    
     # frames, slider_values = precompute_frames(
     # df=df,
     # df_positions=df_positions,
     # func = lambda df: universal_position_estimator(df, method="EKF", state_obj=ekf, window_step=WINDOW_STEP),
     # window_width=WINDOW_WIDTH,
     # window_step=WINDOW_STEP,
-    # output_dir="output_EKF2"
+    # output_dir="outputs/output_EKF"
     # )
     
     # pf = ParticleFilter()
@@ -265,7 +273,7 @@ if __name__ == "__main__":
     # func = lambda df: universal_position_estimator(df, method="PF", state_obj=pf),
     # window_width=WINDOW_WIDTH,
     # window_step=WINDOW_STEP,
-    # output_dir="output_PF2"
+    # output_dir="outputs/output_PF"
     # )
     
     # frames, slider_values = precompute_frames(
@@ -274,16 +282,24 @@ if __name__ == "__main__":
     # func = lambda df: universal_position_estimator(df, method="MLE"),
     # window_width=WINDOW_WIDTH,
     # window_step=WINDOW_STEP,
-    # output_dir="output_MLE2"
+    # output_dir="outputs/output_MLE"
     # )
     
     
     # plot_interactive_precomputed(frames, slider_values)
     # save_trajectory_plot(df, window_width, folder_path="wykresy2_LS/", func=least_square_estimation)
 
-    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
-    save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_DLS/", filename=f"DLS.png",
-                        func = dls.estymation
+    # dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
+    # save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_DLS/", filename=f"DLS.png",
+    #                     func = dls.estymation
+    #                     )
+    # distance_factors = [0.45,0.48,0.5,0.54,0.58]
+    # for distance_factor in distance_factors:
+    distance_factor = 0.5
+    for acceleration in [0.05, 0.1, 0.2, 0.5, 1.0]:
+        d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor, acceleration=acceleration)
+        save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_{acceleration}.png",
+                        func = d2ls.estymation
                         )
 
     # ekf = EKFLocalizer(initial_position=START_POS)

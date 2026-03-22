@@ -1,13 +1,11 @@
 import os
-import pandas as pd
+
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
 
 def plot_errors_for_methods(method_folders, labels=None, path=None):
-    """
-    method_folders: lista folderów np. ["output_LS2", "output_EKF", "output_PF"]
-    labels: opcjonalne nazwy metod do legendy
-    """
 
     if labels is None:
         labels = method_folders
@@ -48,7 +46,7 @@ def plot_errors_for_methods(method_folders, labels=None, path=None):
 
 if __name__ == "__main__":
     plot_errors_for_methods(
-    method_folders=["output_LS2", "output_DLS2", "output_EKF2", "output_PF2", "output_MLE2"],
-    labels=["Najmniejszych kwadratow", "Roznica najmniejszych kwadratow", "Rozszerzony filtr Kalmana", "Sekwencyjna metoda Monte Carlo", "Metoda Największej Wiarygodności"],
+    method_folders=["output_LS", "output_DLS", "output_D2LS"],
+    labels=["Najmniejszych kwadratow", "Pochodna najmniejszych kwadratow", "Pochodna 2 st. najmniejszych kwadratow"],
     path="outputs"
 )
