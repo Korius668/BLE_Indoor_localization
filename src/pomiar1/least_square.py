@@ -4,8 +4,7 @@ import numpy as np
 
 from ble_indoor_localization import (
     objective_function, 
-    calculate_distance_from_rssi, 
-    least_square_estimation, 
+    calculate_distance_from_rssi,  
     prepare_distance_data,
     generate_samples,
     plot_distance_from_signal,
@@ -16,6 +15,30 @@ from pomiar import df_transmitters, plot_map
 
 from .boxplot import transmitter_order, calc_data, dfs
 from .regresja_liniowa import model
+
+
+def least_square_estimation(beacons_coords, distances_from_rssi, weights=None, 
+                           func=None, bounds=None):
+
+    if func is None:
+        func = objective_function
+    
+    if bounds is None:
+        min_real_x_loc, min_real_y_loc = -10, -10
+        max_real_x_loc, max_real_y_loc = 20.0, 27.0
+    else:
+        min_real_x_loc, min_real_y_loc, max_real_x_loc, max_real_y_loc = bounds
+    
+    random_x = np.random.uniform(min_real_x_loc, max_real_x_loc)
+    random_y = np.random.uniform(min_real_y_loc, max_real_y_loc)
+    
+    initial_guess = np.array([random_x, random_y])
+    result = least_squares(
+        func,
+        initial_guess,
+        args=(beacons_coords, distances_from_rssi, weights)
+    )
+    return result.x, result.cost
 
 def calculate_monte_carlo_positions(
     samples,

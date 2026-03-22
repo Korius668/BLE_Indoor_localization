@@ -3,7 +3,15 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import least_squares
 
-from ble_indoor_localization import  plot_distance_from_signal, calculate_distance_from_rssi, generate_samples, distance_between_2_points, prepare_distance_data,objective_function, objective_function_normalized
+from ble_indoor_localization import (
+    plot_distance_from_signal, 
+    calculate_distance_from_rssi, 
+    generate_samples, 
+    distance_between_2_points, 
+    prepare_distance_data,
+    objective_function, 
+    objective_function_normalized
+    )
 from pomiar import df_transmitters, plot_map
 
 from .boxplot import (
@@ -12,6 +20,8 @@ from .boxplot import (
     transmitter_order, 
     df_positions
     )
+from .least_square import least_square_estimation
+
 
 
 def calculate_monte_carlo_positions(

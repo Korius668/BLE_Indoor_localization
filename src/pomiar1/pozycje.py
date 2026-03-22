@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from pomiar import plot_transmitters_on_map
-from ble_indoor_localization import plot_measurement_position
+from ble_indoor_localization import plot_measurement_positions
 pomiar1_data_path = "data/19.09.2025_01/"
 
 pozycje_path = pomiar1_data_path + "pozycje.txt"
@@ -15,6 +15,6 @@ if __name__ == "__main__":
     print("Pozycje pomiarów 1:")
     print(df_positions)
     ax = plot_transmitters_on_map()
-    ax = plot_measurement_position(df_positions,ax)
+    ax = plot_measurement_positions(df_positions,ax)
     plt.savefig(f"docs/obrazy/pozycje_pomiarowe.png")
     plt.show()
