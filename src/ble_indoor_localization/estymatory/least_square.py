@@ -31,10 +31,11 @@ def objective_function(position, beacons, distances_from_rssi, weights=None, dis
     return residuals/(distances_from_rssi**distance_factor) if distance_factor != 1 else residuals/distances_from_rssi
 
 
-def least_square_estimation(df,df_transmitters, bounds, func=objective_function):
+def least_square_estimation(df,df_transmitters, bounds=None, func=objective_function, distance_factor=1.0):
 
     distances_from_rssi = []
     beacons_coords = []
+    
     
     for index, row in df.iterrows():
         i = row['id nadajnika']
@@ -44,15 +45,23 @@ def least_square_estimation(df,df_transmitters, bounds, func=objective_function)
     beacons_coords= np.array(beacons_coords)
     distances_from_rssi = np.array(distances_from_rssi)
     initial_guess = beacons_coords[np.argmin(distances_from_rssi)]
-
-    position = least_squares(
-        func,
-        initial_guess,
-        args=(beacons_coords, distances_from_rssi, None),
-        bounds=bounds,
-        loss='soft_l1', 
-        f_scale=1.0
-    )
+    if bounds is not None:
+        position = least_squares(
+            func,
+            initial_guess,
+            args=(beacons_coords, distances_from_rssi, None, distance_factor),
+            bounds=bounds,
+            loss='soft_l1', 
+            f_scale=1.0
+        )
+    else:
+            position = least_squares(
+            func,
+            initial_guess,
+            args=(beacons_coords, distances_from_rssi, None, distance_factor),
+            loss='soft_l1', 
+            f_scale=1.0
+        )
     x, y = position.x
     return x, y
 

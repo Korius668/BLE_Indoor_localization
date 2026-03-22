@@ -17,11 +17,11 @@ pomiar1/__pycache__/rozrzut_pozycji.cpython-314.pyc
 pomiar1/__pycache__/sila_sygnalu.cpython-314.pyc
 __pycache__
 venv
-output_LS2/frame_*
-output_DLS2/frame_*
-output_EKF2/frame_*
-output_PF2/frame_*
-output_MLE2/frame_*
+outputs/output_LS2/frame_*
+outputs/output_DLS2/frame_*
+outputs/output_EKF2/frame_*
+outputs/output_PF2/frame_*
+outputs/output_MLE2/frame_*
 BLE_Indoor_localization.egg-info
 *.egg-info
 outputs/*

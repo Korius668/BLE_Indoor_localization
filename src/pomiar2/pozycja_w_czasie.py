@@ -225,35 +225,34 @@ def plot_interactive_precomputed(frames, slider_values):
 
 
 if __name__ == "__main__":
+    distance_factor=0.1
+    frames, slider_values = precompute_frames(
+    df=df,
+    df_positions=df_positions,
+    func = lambda df: least_square_estimation(df, df_transmitters, bounds, distance_factor=distance_factor),
+    window_width=WINDOW_WIDTH,
+    window_step=WINDOW_STEP,
+    output_dir="outputs/output_LS"
+    )
 
-    # frames, slider_values = precompute_frames(
-    # df=df,
-    # df_positions=df_positions,
-    # func = lambda df: least_square_estimation(df, df_transmitters, bounds),
-    # window_width=WINDOW_WIDTH,
-    # window_step=WINDOW_STEP,
-    # output_dir="outputs/output_LS"
-    # )
-
-    # dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
-    # frames, slider_values = precompute_frames(
-    # df=df,
-    # df_positions=df_positions,
-    # func = dls.estymation,
-    # window_width=WINDOW_WIDTH,
-    # window_step=WINDOW_STEP,
-    # output_dir="outputs/output_DLS"
-    # )
-
-    # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
-    # frames, slider_values = precompute_frames(
-    # df=df,
-    # df_positions=df_positions,
-    # func = d2ls.estymation,
-    # window_width=WINDOW_WIDTH,
-    # window_step=WINDOW_STEP,
-    # output_dir="outputs/output_D2LS"
-    # )
+    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds, distance_factor=distance_factor)
+    frames, slider_values = precompute_frames(
+    df=df,
+    df_positions=df_positions,
+    func = dls.estymation,
+    window_width=WINDOW_WIDTH,
+    window_step=WINDOW_STEP,
+    output_dir="outputs/output_DLS"
+    )
+    d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=0.5, acceleration=0.30)
+    frames, slider_values = precompute_frames(
+    df=df,
+    df_positions=df_positions,
+    func = d2ls.estymation,
+    window_width=WINDOW_WIDTH,
+    window_step=WINDOW_STEP,
+    output_dir="outputs/output_D2LS"
+    )
 
     # ekf = EKFLocalizer(initial_position=START_POS)    
     # frames, slider_values = precompute_frames(
@@ -295,12 +294,12 @@ if __name__ == "__main__":
     #                     )
     # distance_factors = [0.45,0.48,0.5,0.54,0.58]
     # for distance_factor in distance_factors:
-    distance_factor = 0.5
-    for acceleration in [0.05, 0.1, 0.2, 0.5, 1.0]:
-        d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor, acceleration=acceleration)
-        save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_{acceleration}.png",
-                        func = d2ls.estymation
-                        )
+    # distance_factor = 0.5
+    # for acceleration in [0.35,0.40,0.45]:
+    #     d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor, acceleration=acceleration)
+    #     save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_{acceleration}.png",
+    #                     func = d2ls.estymation
+    #                     )
 
     # ekf = EKFLocalizer(initial_position=START_POS)
     # save_trajectory_plot(df, window_width, folder_path="wykresy2_EKF/", func = ekf.estimation)
