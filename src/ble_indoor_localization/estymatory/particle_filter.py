@@ -1,7 +1,6 @@
 import numpy as np
 
-
-from .least_square import  calculate_distance_from_rssi
+from .least_square import calculate_distance_from_rssi
 
 
 class ParticleFilter:

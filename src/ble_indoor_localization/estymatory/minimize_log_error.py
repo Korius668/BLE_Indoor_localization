@@ -1,5 +1,6 @@
-from scipy.optimize import minimize
 import numpy as np
+from scipy.optimize import minimize
+
 
 class MLEstimator:
     def __init__(self, df_transmitters, bounds):

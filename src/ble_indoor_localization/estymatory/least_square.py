@@ -1,7 +1,7 @@
 from typing import Any
-from scipy.optimize import least_squares
-import numpy as np
 
+import numpy as np
+from scipy.optimize import least_squares
 
 COEF = -15.15626911
 INTERCEPT = -53.671972082739735
@@ -20,7 +20,7 @@ def distance_between_2_points(x1, y1, x2, y2):
     return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
 
-def objective_function(position, beacons, distances_from_rssi, weights=None):
+def objective_function(position, beacons, distances_from_rssi, weights=None, distance_factor=1.0):
     x, y = position
     geometrical_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
     residuals =0
@@ -28,7 +28,7 @@ def objective_function(position, beacons, distances_from_rssi, weights=None):
         residuals = geometrical_distances - distances_from_rssi
     else:        
         residuals = weights*(geometrical_distances - distances_from_rssi)
-    return residuals/distances_from_rssi
+    return residuals/(distances_from_rssi**distance_factor) if distance_factor != 1 else residuals/distances_from_rssi
 
 
 def least_square_estimation(df,df_transmitters, bounds, func=objective_function):
@@ -37,8 +37,8 @@ def least_square_estimation(df,df_transmitters, bounds, func=objective_function)
     beacons_coords = []
     
     for index, row in df.iterrows():
-        i = row['id']
-        rssi_value = row['value']
+        i = row['id nadajnika']
+        rssi_value = row['znormalizowana moc sygnalu']
         distances_from_rssi.append(calculate_distance_from_rssi(rssi_value))
         beacons_coords.append((df_transmitters.loc[df_transmitters['Id'] == int(i), 'x'].values[0], df_transmitters.loc[df_transmitters['Id'] == int(i), 'y'].values[0]))
     beacons_coords= np.array(beacons_coords)

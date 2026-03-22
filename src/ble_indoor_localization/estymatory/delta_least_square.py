@@ -1,11 +1,10 @@
 from typing import Any
 
-
 import numpy as np
 
-
 from .estymator import Estimator
-from .least_square import objective_function, least_square_estimation
+from .least_square import least_square_estimation, objective_function
+
 
 class DLSEstimator(Estimator):
     def __init__(self, startx, starty, window_step, df_transmitters, bounds,speed = 1.4, func = objective_function,  scale_factor=1):
