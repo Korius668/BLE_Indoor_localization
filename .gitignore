@@ -31,6 +31,6 @@ diagrams/wykresy2_EKF/*
 diagrams/wykresy2_PF/*
 diagrams/wykresy2_MLE/*
 diagrams/wykresy2_LS/*
-diagrams/wykresy2_DLS/*
+# diagrams/wykresy2_DLS/*
 diagrams/wykresy2/*
 .vscode
