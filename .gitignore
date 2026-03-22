@@ -27,3 +27,4 @@ BLE_Indoor_localization.egg-info
 outputs/*
 gifs/*
 diagrams/*
+.vscode
