@@ -14,6 +14,6 @@ if __name__ == "__main__":
     print("Pozycje pomiarów 2:")
     print(df_positions)
     ax = plot_transmitters_on_map()
-    ax = plot_measurement_positions(ax)
+    ax = plot_measurement_positions(df_positions, ax=ax)
     plt.savefig(f"docs/obrazy/pozycje_pomiar2.png")
     plt.show()

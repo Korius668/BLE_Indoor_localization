@@ -32,14 +32,14 @@ class D2LSEstimator(Estimator):
         self.a_max = acceleration
 
         self.scale_factor = scale_factor
-        self.func = lambda position, beacons, distances_from_rssi, weights=None: func(position, beacons, distances_from_rssi, weights, distance_factor=distance_factor)
+        self.func = lambda position, beacons, distances_from_rssi, weights, distance_factor: func(position, beacons, distances_from_rssi, weights, distance_factor=distance_factor)
         self.df_transmitters = df_transmitters
         self.bounds = bounds
         offset = 3
         self.ls_bounds = ([bounds[0][0]-offset, bounds[0][1]-offset],[bounds[1][0]+offset, bounds[1][1]+offset])
    
     @Estimator.stay_within_bounds
-    def estymation(self, df) -> tuple[Any, Any]:
+    def estimation(self, df) -> tuple[Any, Any]:
 
         x_desired, y_desired  = least_square_estimation(
             df,

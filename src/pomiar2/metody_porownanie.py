@@ -13,7 +13,7 @@ def plot_errors_for_methods(method_folders, labels=None, path=None):
         method_folders = [os.path.join(path, folder) for folder in method_folders]
 
     plt.figure(figsize=(12, 6))
-
+    df_cumulative = pd.DataFrame({"Estimator": [], "Error":[]})
     for folder, label in zip(method_folders, labels):
         csv_path = os.path.join(folder, "pozycje.csv")
 
@@ -33,7 +33,9 @@ def plot_errors_for_methods(method_folders, labels=None, path=None):
         df["czas"] = pd.to_datetime(df["czas"])
 
         plt.plot(df["czas"], df["error"], label=label)
-
+        new_row = pd.DataFrame({"Estimator": [label], "Error": [df["error"].sum()]})
+        df_cumulative = pd.concat([df_cumulative, new_row], ignore_index=True)
+        
     plt.xlabel("Czas")
     plt.ylabel("Błąd [m]")
     plt.title("Porównanie błędu estymacji pozycji dla różnych metod")
@@ -41,7 +43,7 @@ def plot_errors_for_methods(method_folders, labels=None, path=None):
     plt.grid(True)
     plt.tight_layout()
     plt.savefig("diagrams/wykresy2/metody_porownanie")
-
+    df_cumulative.to_csv("tables/kumulatywny_blad.csv", index=False)
 
 
 if __name__ == "__main__":

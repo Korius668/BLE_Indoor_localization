@@ -13,6 +13,7 @@ from ble_indoor_localization import (DLSEstimator,
                                      EKFLocalizer,
                                      Estimator, 
                                      MLEstimator,
+                                     foggy_wrapper,
                                      least_square_estimation,
                                      plot_average_positions,
                                      plot_active_measurement_position                                     
@@ -133,31 +134,17 @@ def save_trajectory_plot(
 
 
 def generate_frame(df, df_positions, center_time, window_width, func, last_position=START_POS):
-    df_window = df[
-        (df["data"] >= center_time - window_width/2) &
-        (df["data"] <= center_time + window_width/2)
-    ]
-    
-    x_t, y_t = last_position
-    if df_window.empty:
-        active_position = None
-        part_position = None
-        x_t = y_t = None
-    else:
-        active_position = df_window["position"].mode().iloc[0]
-        begin_t_pos = df[df["position"] == active_position]["data"].min()
-        end_t_pos = df[df["position"] == active_position]["data"].max()
-        part_position = (center_time - begin_t_pos).value / (end_t_pos - begin_t_pos).value
-        x_t, y_t = func(df_window)
+    x_t, y_t, active_position, p_x, p_y, df_window = compute_position_values(df, df_positions, center_time, window_width, func, last_position)
 
     fig, ax = plt.subplots(figsize=(6, 10))
     ax = plot_map(ax=ax)
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
 
-    _,p_x, p_y = plot_active_measurement_position(df_positions=df_positions, ax=ax,
+    # Plot the active position (but we already have p_x, p_y)
+    plot_active_measurement_position(df_positions=df_positions, ax=ax,
                              active_position=active_position,
-                             part_position=part_position)
+                             part_position=None)  # part_position not needed since we computed p_x, p_y
 
     if active_position is not None:
         plot_signal_strength_map(
@@ -178,6 +165,41 @@ def generate_frame(df, df_positions, center_time, window_width, func, last_posit
 
     plt.close(fig)
     return image, x_t, y_t, active_position, p_x, p_y
+
+
+def compute_position_values(df, df_positions, center_time, window_width, func, last_position=START_POS):
+    df_window = df[
+        (df["data"] >= center_time - window_width/2) &
+        (df["data"] <= center_time + window_width/2)
+    ]
+    
+    x_t, y_t = last_position
+    if df_window.empty:
+        active_position = None
+        part_position = None
+        x_t = y_t = None
+        p_x = p_y = None
+    else:
+        active_position = df_window["position"].mode().iloc[0]
+        begin_t_pos = df[df["position"] == active_position]["data"].min()
+        end_t_pos = df[df["position"] == active_position]["data"].max()
+        part_position = (center_time - begin_t_pos).value / (end_t_pos - begin_t_pos).value
+        x_t, y_t = func(df_window)
+        
+        # Compute true position
+        if active_position is not None:
+            row = df_positions.iloc[active_position - 1]
+            if pd.isna(row['x']) or pd.isna(row['y']):
+                prev_row = df_positions.iloc[active_position - 2]
+                next_row = df_positions.iloc[active_position]
+                p_x = prev_row['x'] + (next_row['x'] - prev_row['x']) * part_position
+                p_y = prev_row['y'] + (next_row['y'] - prev_row['y']) * part_position
+            else:
+                p_x, p_y = row['x'], row['y']
+        else:
+            p_x = p_y = None
+
+    return x_t, y_t, active_position, p_x, p_y, df_window
 
 
 def precompute_frames(df, df_positions,  window_width, window_step, func=least_square_estimation, output_dir="frames", start_pos=START_POS):
@@ -207,6 +229,42 @@ def precompute_frames(df, df_positions,  window_width, window_step, func=least_s
     return frames, slider_values
 
 
+def precompute_trajectory(df, df_positions, window_width, window_step, func=least_square_estimation, output_dir=None, start_pos=START_POS):
+    os.makedirs(output_dir, exist_ok=True)
+    if output_dir is not None:
+        with open(output_dir+"/pozycje.csv", "w", newline="") as f: 
+            writer = csv.writer(f) 
+            writer.writerow([ "l.p.", "czas", "pozycja", "x_estymowane", "y_estymowane", "x_prawdziwe", "y_prawdziwe" ])
+        
+        
+    t0 = df["data"].min()
+    times_sec = (df["data"] - t0).dt.total_seconds()
+    slider_values = np.arange(times_sec.min(), times_sec.max()+1, window_step.total_seconds())
+
+    trajectory = []
+    x_t, y_t = start_pos
+    for i, t in enumerate(tqdm(slider_values, desc="Computing trajectory", unit="step")):
+        center_time = t0 + timedelta(seconds=t)
+        
+        x_t, y_t, active_position, p_x, p_y, _ = compute_position_values(df, df_positions, center_time, window_width, func, last_position=(x_t, y_t))
+
+        trajectory.append({
+            'l.p.': i,
+            'czas': center_time.isoformat(),
+            'pozycja': active_position,
+            'x_estymowane': x_t,
+            'y_estymowane': y_t,
+            'x_prawdziwe': p_x,
+            'y_prawdziwe': p_y
+        })
+        if output_dir is not None:
+            with open(output_dir+"/pozycje.csv", "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([ i, center_time.isoformat(), active_position, x_t, y_t, p_x, p_y ])
+
+    return pd.DataFrame(trajectory)
+
+
 def plot_interactive_precomputed(frames, slider_values):
     fig, ax = plt.subplots(figsize=(6, 10))
     img = ax.imshow(frames[0])
@@ -226,29 +284,30 @@ def plot_interactive_precomputed(frames, slider_values):
 
 if __name__ == "__main__":
     distance_factor=0.1
-    frames, slider_values = precompute_frames(
-    df=df,
-    df_positions=df_positions,
-    func = lambda df: least_square_estimation(df, df_transmitters, bounds, distance_factor=distance_factor),
-    window_width=WINDOW_WIDTH,
-    window_step=WINDOW_STEP,
-    output_dir="outputs/output_LS"
-    )
+    # frames, slider_values = precompute_frames(
+    # df=df,
+    # df_positions=df_positions,
+    # func = lambda df: least_square_estimation(df, df_transmitters, bounds, distance_factor=distance_factor),
+    # window_width=WINDOW_WIDTH,
+    # window_step=WINDOW_STEP,
+    # output_dir="outputs/output_LS"
+    # )
 
     dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds, distance_factor=distance_factor)
     frames, slider_values = precompute_frames(
     df=df,
     df_positions=df_positions,
-    func = dls.estymation,
+    func = dls.estimation,
     window_width=WINDOW_WIDTH,
     window_step=WINDOW_STEP,
     output_dir="outputs/output_DLS"
     )
+    
     d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=0.5, acceleration=0.30)
     frames, slider_values = precompute_frames(
     df=df,
     df_positions=df_positions,
-    func = d2ls.estymation,
+    func = d2ls.estimation,
     window_width=WINDOW_WIDTH,
     window_step=WINDOW_STEP,
     output_dir="outputs/output_D2LS"
@@ -306,3 +365,16 @@ if __name__ == "__main__":
     # pf = ParticleFilter()
     # save_trajectory_plot(df, window_width, folder_path="wykresy2_PF/", func = lambda df: universal_position_estimator(df, method="PF", state_obj=pf))
     # save_trajectory_plot(df, window_width, folder_path="wykresy2_MLE/", func = lambda df: universal_position_estimator(df, method="MLE"))
+    
+    # func = foggy_wrapper(dls,d2ls, proportion=0.5)
+    # frames, slider_values = precompute_frames(
+    # df=df,
+    # df_positions=df_positions,
+    # func = d2ls.estymation,
+    # window_width=WINDOW_WIDTH,
+    # window_step=WINDOW_STEP,
+    # output_dir="outputs/output_FOGGY"
+    # )
+    # for proportion in [0.1, 0.3, 0.5, 0.7, 0.9]:
+    #     func = foggy_wrapper(dls,d2ls, proportion=proportion)
+    #     save_trajectory_plot(df, WINDOW_WIDTH, folder_path="wykresy2_FOGGY/", filename=f"FOGGY_{proportion}.png", func = func)

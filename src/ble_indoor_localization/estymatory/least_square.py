@@ -36,7 +36,6 @@ def least_square_estimation(df,df_transmitters, bounds=None, func=objective_func
     distances_from_rssi = []
     beacons_coords = []
     
-    
     for index, row in df.iterrows():
         i = row['id nadajnika']
         rssi_value = row['znormalizowana moc sygnalu']

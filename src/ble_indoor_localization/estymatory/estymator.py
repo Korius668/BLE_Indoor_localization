@@ -9,7 +9,7 @@ from .particle_filter import ParticleFilter
 
 class Estimator(ABC):
     @abstractmethod
-    def estymation(self, df) -> tuple:
+    def estimation(self, df) -> tuple:
         pass
     
     # def stay_within_bounds(self, x, y):
