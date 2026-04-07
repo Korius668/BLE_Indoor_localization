@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-bounds = ([0, 0],[9.0, 27.0])
+bounds = ([0, 0],[8.0, 27.0])
 
 mapa_path = "mapa/map4.PNG"
 pozycje_nadajnikow_path = "mapa/pozycjeNadajnikow.txt"
