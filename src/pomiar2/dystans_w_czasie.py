@@ -20,7 +20,7 @@ from pomiar1 import model
 
 
 WINDOW_STEP = timedelta(seconds=0.5)
-WINDOW_WIDTH = timedelta(seconds=2)
+WINDOW_WIDTH = timedelta(seconds=15)
 
 def read_timestamps(file_path):
     timestamps = []
