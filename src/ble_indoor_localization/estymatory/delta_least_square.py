@@ -24,11 +24,11 @@ class DLSEstimator(Estimator):
         self.v_max = speed
         self.dt = window_step.total_seconds()
         self.scale_factor = scale_factor
-        self.func = lambda position, beacons, distances_from_rssi, weights, distance_factor: func(position, beacons, distances_from_rssi, weights, distance_factor=distance_factor)
+        self.func = func
         self.df_transmitters = df_transmitters
         self.bounds = bounds
     
-    @Estimator.stay_within_bounds
+    # @Estimator.stay_within_bounds
     def estimation(self, df) -> tuple[Any, Any]:
         x_desired, y_desired = least_square_estimation(
             df,
@@ -43,9 +43,7 @@ class DLSEstimator(Estimator):
 
         dist = np.sqrt(dx * dx + dy * dy)
             
-        max_speed = self.v_max
-       
-        max_dist = max_speed * self.dt
+        max_dist = self.v_max * self.dt
 
         if dist > max_dist:
             scale = max_dist / dist
