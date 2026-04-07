@@ -37,8 +37,8 @@ def get_full_trajectory(df, window_width, window_step, func, start_pos=START_POS
     x_t, y_t = start_pos
     for center in tqdm(time_steps, desc="Processing time steps", unit="step"):
         df_window = df[
-            (df["data"] >= center - window_width/2) &
-            (df["data"] <= center + window_width/2)
+            (df["data"] >= center - window_width) &
+            (df["data"] <= center)
         ]
         active_position = df_window["position"].mode().iloc[0] if not df_window.empty else None
         if not df_window.empty:
@@ -53,7 +53,7 @@ def save_trajectory_plot(
     window_width: timedelta,
     window_step: timedelta = WINDOW_STEP,
     func = least_square_estimation,
-    folder_path: str = "wykresy/",
+    folder_path: str = "diagrams/",
     colormap: str = 'plasma',
     label_step_divisor: int = 20,
     filename = None
@@ -229,12 +229,12 @@ def precompute_frames(df, df_positions,  window_width, window_step, func=least_s
     return frames, slider_values
 
 
-def precompute_trajectory(df, df_positions, window_width, window_step, func=least_square_estimation, output_dir=None, start_pos=START_POS):
-    os.makedirs(output_dir, exist_ok=True)
-    if output_dir is not None:
-        with open(output_dir+"/pozycje.csv", "w", newline="") as f: 
+def precompute_trajectory(df, df_positions, window_width, window_step, func=least_square_estimation, output_file=None, start_pos=START_POS):
+
+    if output_file is not None:
+        with open("outputs/" + output_file, "w", newline="") as f: 
             writer = csv.writer(f) 
-            writer.writerow([ "l.p.", "czas", "pozycja", "x_estymowane", "y_estymowane", "x_prawdziwe", "y_prawdziwe" ])
+            writer.writerow([ "l.p.", "czas", "pozycja", "x_estymowane", "y_estymowane", "x_prawdziwe", "y_prawdziwe", "blad" ])
         
         
     t0 = df["data"].min()
@@ -247,7 +247,7 @@ def precompute_trajectory(df, df_positions, window_width, window_step, func=leas
         center_time = t0 + timedelta(seconds=t)
         
         x_t, y_t, active_position, p_x, p_y, _ = compute_position_values(df, df_positions, center_time, window_width, func, last_position=(x_t, y_t))
-
+        error = np.sqrt((x_t - p_x)**2 + (y_t - p_y)**2) if p_x is not None and p_y is not None else None
         trajectory.append({
             'l.p.': i,
             'czas': center_time.isoformat(),
@@ -255,12 +255,13 @@ def precompute_trajectory(df, df_positions, window_width, window_step, func=leas
             'x_estymowane': x_t,
             'y_estymowane': y_t,
             'x_prawdziwe': p_x,
-            'y_prawdziwe': p_y
+            'y_prawdziwe': p_y,
+            'blad': error
         })
-        if output_dir is not None:
-            with open(output_dir+"/pozycje.csv", "a", newline="") as f:
+        if output_file is not None:
+            with open("outputs/" + output_file, "a", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow([ i, center_time.isoformat(), active_position, x_t, y_t, p_x, p_y ])
+                writer.writerow([ i, center_time.isoformat(), active_position, x_t, y_t, p_x, p_y, error ])
 
     return pd.DataFrame(trajectory)
 
@@ -283,7 +284,9 @@ def plot_interactive_precomputed(frames, slider_values):
 
 
 if __name__ == "__main__":
-    distance_factor=0.1
+    distance_factor=0
+    acceleration = 1.0
+    speed = 1.2
     # frames, slider_values = precompute_frames(
     # df=df,
     # df_positions=df_positions,
@@ -293,25 +296,25 @@ if __name__ == "__main__":
     # output_dir="outputs/output_LS"
     # )
 
-    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds, distance_factor=distance_factor)
-    frames, slider_values = precompute_frames(
-    df=df,
-    df_positions=df_positions,
-    func = dls.estimation,
-    window_width=WINDOW_WIDTH,
-    window_step=WINDOW_STEP,
-    output_dir="outputs/output_DLS"
-    )
+    # dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds, distance_factor=distance_factor)
+    # frames, slider_values = precompute_frames(
+    # df=df,
+    # df_positions=df_positions,
+    # func = dls.estimation,
+    # window_width=WINDOW_WIDTH,
+    # window_step=WINDOW_STEP,
+    # output_dir="outputs/output_DLS"
+    # )
     
-    d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=0.5, acceleration=0.30)
-    frames, slider_values = precompute_frames(
-    df=df,
-    df_positions=df_positions,
-    func = d2ls.estimation,
-    window_width=WINDOW_WIDTH,
-    window_step=WINDOW_STEP,
-    output_dir="outputs/output_D2LS"
-    )
+    # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=0.5, acceleration=0.30)
+    # frames, slider_values = precompute_frames(
+    # df=df,
+    # df_positions=df_positions,
+    # func = d2ls.estimation,
+    # window_width=WINDOW_WIDTH,
+    # window_step=WINDOW_STEP,
+    # output_dir="outputs/output_D2LS"
+    # )
 
     # ekf = EKFLocalizer(initial_position=START_POS)    
     # frames, slider_values = precompute_frames(
@@ -343,23 +346,38 @@ if __name__ == "__main__":
     # output_dir="outputs/output_MLE"
     # )
     
-    
+    window_width = timedelta(seconds=30)
     # plot_interactive_precomputed(frames, slider_values)
-    # save_trajectory_plot(df, window_width, folder_path="wykresy2_LS/", func=least_square_estimation)
+    func = lambda df: least_square_estimation(df, df_transmitters, bounds=None, distance_factor=distance_factor)
+    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_LS/", filename=f"LS.png", func=func)
 
-    # dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds)
-    # save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_DLS/", filename=f"DLS.png",
-    #                     func = dls.estymation
-    #                     )
+    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds, speed=speed, distance_factor=distance_factor, )
+    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_DLS/", filename=f"DLS.png",
+                        func = dls.estimation
+                        )
+    d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor,speed=speed, acceleration=acceleration)
+    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS.png",
+                    func = d2ls.estimation
+                        )
+    
     # distance_factors = [0.45,0.48,0.5,0.54,0.58]
     # for distance_factor in distance_factors:
     # distance_factor = 0.5
+    
     # for acceleration in [0.35,0.40,0.45]:
-    #     d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor, acceleration=acceleration)
-    #     save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_{acceleration}.png",
-    #                     func = d2ls.estymation
-    #                     )
+        # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor, acceleration=acceleration)
+        # save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_{acceleration}.png",
+        #                 func = d2ls.estimation
+        #                     )
 
+    # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor,speed=speed, acceleration=acceleration)
+    # save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_v2.png",
+    #                 func = d2ls.estimation1
+    #                     )
+    # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor,speed=speed, acceleration=acceleration)
+    # save_trajectory_plot(df, timedelta(seconds=15), folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_v3.png",
+    #                 func = d2ls.estimation2
+    #                     )
     # ekf = EKFLocalizer(initial_position=START_POS)
     # save_trajectory_plot(df, window_width, folder_path="wykresy2_EKF/", func = ekf.estimation)
     # pf = ParticleFilter()
@@ -370,7 +388,7 @@ if __name__ == "__main__":
     # frames, slider_values = precompute_frames(
     # df=df,
     # df_positions=df_positions,
-    # func = d2ls.estymation,
+    # func = d2ls.estimation,
     # window_width=WINDOW_WIDTH,
     # window_step=WINDOW_STEP,
     # output_dir="outputs/output_FOGGY"
