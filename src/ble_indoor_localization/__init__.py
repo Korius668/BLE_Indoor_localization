@@ -11,7 +11,7 @@ from .calculations import (calculate_distance_from_rssi,
                            objective_function,
                            objective_function_normalized,
                            prepare_distance_data, value_of_objective_function)
-from .estymatory import (D2LSEstimator,DLSEstimator, EKFLocalizer, Estimator, MLEstimator,
+from .estymatory import (D2LSEstimator,DLSEstimator, EKFLocalizer, Estimator, MLEstimator, D2LSDEstimator,
 least_square_estimation, foggy_wrapper)
 from .plotting import (plot_area_of_objective_function, plot_average_positions,
                        plot_boxplots, plot_distance_from_signal,

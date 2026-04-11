@@ -348,17 +348,17 @@ if __name__ == "__main__":
     
     window_width = timedelta(seconds=30)
     # plot_interactive_precomputed(frames, slider_values)
-    # func = lambda df: least_square_estimation(df, df_transmitters, bounds=None, distance_factor=distance_factor)
-    # save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_LS/", filename=f"LS.png", func=func)
+    func = lambda df: least_square_estimation(df, df_transmitters, bounds=None, distance_factor=0.65)
+    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_LS/", filename=f"LS.png", func=func)
 
-    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds, speed=speed, distance_factor=distance_factor, )
-    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_DLS/", filename=f"DLS_v2.png",
+    dls = DLSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds, speed=0.9, distance_factor=0.71, )
+    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_DLS/", filename=f"DLS.png",
                         func = dls.estimation
                         )
-    # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor,speed=speed, acceleration=acceleration)
-    # save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS.png",
-    #                 func = d2ls.estimation
-    #                     )
+    d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=0.71, speed=0.9, acceleration=1.05)
+    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS.png",
+                    func = d2ls.estimation
+                        )
     
     # distance_factors = [0.45,0.48,0.5,0.54,0.58]
     # for distance_factor in distance_factors:
