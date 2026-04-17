@@ -68,7 +68,7 @@ if __name__ == "__main__":
   #         writer.writerow([ "DLS", "-", speed, distance_factor, cumulative_error ])
     acceleration, speed, distance_factor = 1.05, 0.9, 0.71
     for damping_factor in tqdm([-1], desc="Testing D2LSD with different parameters"):
-      for acceleration in tqdm(np.arange(1.9, 2.3, 0.01), desc="Testing D2LSD with different parameters"):
+      for acceleration in tqdm(np.arange( 2.3, 2.6, 0.01), desc="Testing D2LSD with different parameters"):
         acceleration = round(acceleration, 2)
         d2lsd = D2LSDEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor,speed=speed, acceleration=acceleration, damping_factor=damping_factor)
         trajectory = precompute_trajectory(
