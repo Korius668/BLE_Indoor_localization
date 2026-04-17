@@ -40,6 +40,7 @@ class D2LSDEstimator(Estimator):
         self.ls_bounds = ([bounds[0][0]-offset, bounds[0][1]-offset],[bounds[1][0]+offset, bounds[1][1]+offset])
         self.distance_factor = distance_factor
         self.damping_factor = damping_factor
+        
     # @Estimator.stay_within_bounds
     def estimation(self, df) -> tuple[Any, Any]:
         target = np.array(least_square_estimation(
@@ -68,7 +69,6 @@ class D2LSDEstimator(Estimator):
 
         max_dv = self.a_max * self.dt
         scale = min(1.0, max_dv / dv_norm) if dv_norm > 0 else 1.0
-        scale *= self.scale_factor
 
         vel += dv * scale
 

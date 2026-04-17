@@ -31,16 +31,16 @@ class DLSEstimator(Estimator):
     
     # # @Estimator.stay_within_bounds
     def estimation(self, df) -> tuple[Any, Any]:
-        target = np.array(least_square_estimation(
+        p_ls = np.array(least_square_estimation(
             df,
             df_transmitters=self.df_transmitters, 
             # bounds=self.ounds, 
             func=self.func,
             distance_factor=self.distance_factor
         ))
-        pos = np.array([self.x, self.y])
+        p = np.array([self.x, self.y])
         
-        d = target - pos
+        d = p_ls - p
         dist = np.linalg.norm(d)
             
         max_dist = self.v_max * self.dt
@@ -50,9 +50,9 @@ class DLSEstimator(Estimator):
         else:
             scale = 1.0
         
-        pos +=  d * scale
+        p +=  d * scale
         
-        self.x, self.y = pos
+        self.x, self.y = p
         
         return self.x, self.y
     
