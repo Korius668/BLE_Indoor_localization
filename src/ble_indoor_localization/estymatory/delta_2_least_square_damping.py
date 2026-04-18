@@ -60,6 +60,43 @@ class D2LSDEstimator(Estimator):
         direction = d / dist if dist > 1e-6 else np.zeros(2)
 
         # Docelowa prędkość
+        v_desired = dist / self.dt
+        vel_desired = direction * v_desired
+
+        # Ograniczenie przyspieszenia
+        dv = vel_desired - vel
+        dv_norm = np.linalg.norm(dv)
+
+        max_dv = self.a_max * self.dt
+        scale = min(1.0, max_dv / dv_norm) if dv_norm > 0 else 1.0
+
+        vel += dv * scale
+        pos += vel * self.dt
+
+        self.x, self.y = pos
+        self.vx, self.vy = vel*self.damping_factor
+
+        return self.x, self.y
+    
+    # @Estimator.stay_within_bounds
+    def estimation2(self, df) -> tuple[Any, Any]:
+        target = np.array(least_square_estimation(
+            df,
+            df_transmitters=self.df_transmitters,
+            func=self.func,
+            distance_factor=self.distance_factor
+        ))
+
+        pos = np.array([self.x, self.y])
+        vel = np.array([self.vx, self.vy])
+
+        d = target - pos
+        dist = np.linalg.norm(d)
+
+        # Kierunek
+        direction = d / dist if dist > 1e-6 else np.zeros(2)
+
+        # Docelowa prędkość
         v_desired = min(self.v_max, dist / self.dt)
         vel_desired = direction * v_desired
 

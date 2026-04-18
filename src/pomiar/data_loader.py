@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from .mapa_nadajniki import pozycje_nadajnikow_path
+from .mapa_nadajniki import df_transmitters
 
 from ble_indoor_localization.calculations import calculate_euclidean_distance
 
@@ -20,7 +20,6 @@ id_mapping = {
 }
 
 transmitter_order = list(id_mapping.values())
-df_transmitters = pd.read_csv(pozycje_nadajnikow_path, header="infer", names=None)
 
 def read_pomiar_data(file_paths, df_positions, df_transmitters):
     """

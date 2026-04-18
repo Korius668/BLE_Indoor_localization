@@ -28,7 +28,7 @@ class DLSEstimator(Estimator):
         self.df_transmitters = df_transmitters
         self.bounds = bounds
         self.distance_factor = distance_factor
-    
+
     # # @Estimator.stay_within_bounds
     def estimation(self, df) -> tuple[Any, Any]:
         p_ls = np.array(least_square_estimation(
