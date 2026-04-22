@@ -26,11 +26,4 @@ BLE_Indoor_localization.egg-info
 *.egg-info
 outputs/*
 gifs/*
-diagrams/wykresy2_D2LS/*
-diagrams/wykresy2_EKF/*
-diagrams/wykresy2_PF/*
-diagrams/wykresy2_MLE/*
-diagrams/wykresy2_LS/*
-diagrams/wykresy2_DLS/*
-diagrams/wykresy2/*
 .vscode

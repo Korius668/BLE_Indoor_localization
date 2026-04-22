@@ -85,9 +85,9 @@ def D2LSD_grid_search():
   window_width_seconds = 3
   window_width = timedelta(seconds=window_width_seconds)
   acceleration, speed, distance_factor = 1.05, 0.9, 0.71
-  for acceleration in tqdm(np.arange(0, 1.5, 0.2), desc="Testing D2LS with different parameters"):
+  for acceleration in tqdm(np.arange(2, 3, 0.2), desc="Testing D2LSD with different parameters"):
     for distance_factor in np.arange(0, 2.5, 0.2):
-      for damping_factor in tqdm(np.arange( -1, 2, 0.2), desc="Testing D2LSD with different parameters"):
+      for damping_factor in np.arange( -0.5, 2, 0.2):
         acceleration = round(acceleration, 3)
         distance_factor = round(distance_factor,3)
         d2lsd = D2LSDEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=distance_factor,speed=speed, acceleration=acceleration, damping_factor=damping_factor)
@@ -106,7 +106,7 @@ def D2LSD_grid_search():
           
         
 if __name__ == "__main__":
-  LS_grid_search()
+  # LS_grid_search()
   # DLS_grid_search()
   # D2LS_grid_search()
-  # D2LSD_grid_search()
+  D2LSD_grid_search()
