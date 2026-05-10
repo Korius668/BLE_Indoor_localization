@@ -319,7 +319,7 @@ def plot_distance_from_signal(measurement_name, df_measurement, df_transmitters,
             if c_flag:
                 circle = plt.Circle((tx_x, tx_y), estimated_distance, color='blue', 
                                    fill=False, linestyle='--', alpha=0.7, label=None)
-                # ax.add_patch(circle)
+                ax.add_patch(circle)
                 ax.text(tx_x, tx_y + estimated_distance, f'{estimated_distance:.2f}m', 
                        color='blue', fontsize=8, ha='center', va='bottom')
         else:

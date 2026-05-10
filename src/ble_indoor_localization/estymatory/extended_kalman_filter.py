@@ -378,46 +378,46 @@ class EKFLocalizer:
         # Zwróć tylko (x, y) — kompatybilnie z Twoim obecnym kodem
         return float(self.state[0]), float(self.state[1])
 
-    
-
-    def ekf_estimation(self, df,  
-                        state_obj: EKFLocalizer, 
-                        window_step, 
-                    per_beacon_scale=None,
-                    distance_for_R='pred'
-                    ):
-
-        beacons_coords = []
-        distances = []
-
-        for _, row in df.iterrows():
-            beacon_id = int(row["id"])
-            rssi = float(row["value"])
-
-            # Szukamy beacona w df_transmitters
-            match = self.df_transmitters.loc[self.df_transmitters["Id"] == beacon_id]
-            if match.empty:
-                # brak tego beacona w słowniku – pomijamy
-                continue
 
 
-            bx = self.df_transmitters.loc[self.df_transmitters["Id"] == beacon_id, "x"].values[0]
-            by = self.df_transmitters.loc[self.df_transmitters["Id"] == beacon_id, "y"].values[0]
+def ekf_estimation(self, df,  
+                    state_obj: EKFLocalizer, 
+                    window_step, 
+                per_beacon_scale=None,
+                distance_for_R='pred'
+                ):
 
-            beacons_coords.append((bx, by))
-            distances.append(calculate_distance_from_rssi(rssi))
+    beacons_coords = []
+    distances = []
 
-        beacons_coords = np.array(beacons_coords, dtype=float)
-        distances = np.array(distances, dtype=float)
+    for _, row in df.iterrows():
+        beacon_id = int(row["id"])
+        rssi = float(row["value"])
 
-        dt = window_step.total_seconds()
-        state_obj.predict(dt)
+        # Szukamy beacona w df_transmitters
+        match = self.df_transmitters.loc[self.df_transmitters["Id"] == beacon_id]
+        if match.empty:
+            # brak tego beacona w słowniku – pomijamy
+            continue
 
-        # Update (z debugiem opcjonalnie)
-        x, y = state_obj.update(
-            beacons_coords,
-            distances,
-            per_beacon_scale=per_beacon_scale,
-            distance_for_R=distance_for_R
-        )
-        return x,y
+
+        bx = self.df_transmitters.loc[self.df_transmitters["Id"] == beacon_id, "x"].values[0]
+        by = self.df_transmitters.loc[self.df_transmitters["Id"] == beacon_id, "y"].values[0]
+
+        beacons_coords.append((bx, by))
+        distances.append(calculate_distance_from_rssi(rssi))
+
+    beacons_coords = np.array(beacons_coords, dtype=float)
+    distances = np.array(distances, dtype=float)
+
+    dt = window_step.total_seconds()
+    state_obj.predict(dt)
+
+    # Update (z debugiem opcjonalnie)
+    x, y = state_obj.update(
+        beacons_coords,
+        distances,
+        per_beacon_scale=per_beacon_scale,
+        distance_for_R=distance_for_R
+    )
+    return x,y
