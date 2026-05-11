@@ -349,6 +349,7 @@ if __name__ == "__main__":
     
     window_width = timedelta(seconds=3)
     # plot_interactive_precomputed(frames, slider_values)
+    
     # func = lambda df: least_square_estimation(df, df_transmitters, bounds=None, distance_factor=3)
     # save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_LS/", filename=f"LS_distance_factor_3.png", func=func)
 
@@ -356,14 +357,14 @@ if __name__ == "__main__":
     # save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_DLS/", filename=f"DLS.png",
     #                     func = dls.estimation
     #                     )
-    d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=2.4, speed=0.9, acceleration=1.05)
-    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_sz.png",
-                    func = d2ls.estimation
-                        )
-    # d2lsd = D2LSDEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=0.71, speed=0.9, acceleration=1.31, damping_factor=-0.1)
-    # save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_D2LSD/", filename=f"D2LSD.png",
-    #                 func = d2lsd.estimation
+    # d2ls = D2LSEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=2.4, speed=0.9, acceleration=1.05)
+    # save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_D2LS/", filename=f"D2LS_sz.png",
+    #                 func = d2ls.estimation
     #                     )
+    d2lsd = D2LSDEstimator(*START_POS, window_step=WINDOW_STEP,df_transmitters=df_transmitters,bounds=bounds,distance_factor=1.41, speed=0.9, acceleration=2.8, damping_factor=-0.5)
+    save_trajectory_plot(df, window_width, folder_path="diagrams/wykresy2_D2LSD/", filename=f"D2LSD_sz.png",
+                    func = d2lsd.estimation
+                        )
     
     
     # distance_factors = [0.45,0.48,0.5,0.54,0.58]

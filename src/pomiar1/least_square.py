@@ -165,15 +165,15 @@ if __name__ == "__main__":
         fig, ax = plt.subplots(figsize=(10, 10))
         ax = plot_map(ax)
         ax= plot_area_of_function(X,Y,calc_data=calc_data[measurement_num],ax=ax)
-        ax = plot_estimated_positions(
-            measurement_num,
-            estimated_positions,
-            ax=ax            
-        )
+        # ax = plot_estimated_positions(
+        #     measurement_num,
+        #     estimated_positions,
+        #     ax=ax            
+        # )
         func = lambda rssi: calculate_distance_from_rssi(rssi,model)
         ax = plot_distance_from_signal(measurement_num, dfs[measurement_num],df_transmitters,func,  ax)
-        avg_x, avg_y = calculate_average_positions(calc_data=calc_data[measurement_num])
-        ax = plot_average_positions(avg_x,avg_y, ax=ax)
+        # avg_x, avg_y = calculate_average_positions(calc_data=calc_data[measurement_num])
+        # ax = plot_average_positions(avg_x,avg_y, ax=ax)
        
         ax.set_xlabel('Oś X (m)')
         ax.set_ylabel('Oś Y (m)')

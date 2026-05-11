@@ -57,5 +57,13 @@ __all__ = [
     'plot_boxplots',
     "save_probki_w_czasie_plot",
     "plot_active_measurement_position",
+
+    # Estimators
+    "D2LSEstimator", 
+    "DLSEstimator", 
+    "EKFLocalizer", 
+    "Estimator", 
+    "MLEstimator", 
+    "D2LSDEstimator"
 ]
 
