@@ -3,7 +3,7 @@ import numpy as np
 from scipy.optimize import least_squares
 from joblib import Memory
 memory = Memory("./cache", verbose=0)
-
+from ..calculations import calculate_distance_from_rssi, distance_between_2_points, objective_function, objective_function_normalized
 
 
 COEF = -15.15626911
@@ -17,6 +17,7 @@ def calculate_distance_from_rssi(signal_strength):
     log_distance = (signal_strength - intercept) / slope
     distance = np.power(10 ,log_distance)
     return distance
+    
 
 def distance_between_2_points(x1, y1, x2, y2):
     return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
