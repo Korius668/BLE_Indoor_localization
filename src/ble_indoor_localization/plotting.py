@@ -195,7 +195,7 @@ def save_probki_w_czasie_plot(df, window_width, window_step, save_path='wykresy/
 
 
 def plot_signal_strength_map(df_measurement, df_transmitters, 
-                             ax, fig=None, c_flag=True):
+                             ax, fig=None, c_flag=True, real_plot=True):
     """
     Plot signal strength map with transmitter positions.
     
@@ -226,7 +226,7 @@ def plot_signal_strength_map(df_measurement, df_transmitters,
     transmitter_stats = df_measurement.groupby('id nadajnika')['znormalizowana moc sygnalu'].agg(['mean', 'count']).reset_index()
     transmitter_stats = transmitter_stats.rename(columns={'mean': 'average_signal_strength', 'count': 'sample_count'})
     
-    if not df_measurement.empty:
+    if not df_measurement.empty and real_plot:
         ax.scatter(df_measurement['x'].iloc[0], df_measurement['y'].iloc[0], 
                   color='red', s=100, marker='o', label='Prawdziwa pozycja')
     
@@ -342,80 +342,6 @@ def plot_distance_from_signal(measurement_name, df_measurement, df_transmitters,
 
 
 
-def plot_example_distance_from_signal(measurement_name, df_measurement, df_transmitters,
-                              calculate_distance_func, ax, fig=None, c_flag=True):    
-    transmitter_stats = df_measurement.groupby('id nadajnika')['znormalizowana moc sygnalu'].agg(['mean', 'count']).reset_index()
-    transmitter_stats = transmitter_stats.rename(columns={'mean': 'average_signal_strength', 'count': 'sample_count'})
-    
-    if not fig:
-        fig = plt.gcf()
-    df_transmitters2 = df_transmitters[df_transmitters['Id'].isin((1, 2, 3, 4, 5, 6,7,8))]
-    ax = plot_signal_strength_map(df_measurement, df_transmitters2, 
-                                fig=fig, ax=ax)
-    example_point = np.array([-2, 10])
-    
-    distances = [3.16, 5.0, 8.0,3 ,5 , 7.07, 4.24, 6.32]
-    for index, tx_row in transmitter_stats.iterrows():
-        tx_id = tx_row['id nadajnika']
-
-        transmitter_coords_row = df_transmitters2[df_transmitters2['Id'] == int(tx_id)]
-        if not transmitter_coords_row.empty:
-            transmitter_coords = transmitter_coords_row.iloc[0]
-            tx_x = transmitter_coords['x']
-            tx_y = transmitter_coords['y']
-            estimated_distance =  distances[index]
-            circle = plt.Circle((tx_x, tx_y), estimated_distance, color='blue', 
-                                fill=False, linestyle='--', alpha=0.7, label=None)            
-            ax.add_patch(circle)
-            C = np.array((tx_x, tx_y))
-            R = estimated_distance
-            v = example_point - C
-            v_norm = v / np.linalg.norm(v)
-            Q = C + R * v_norm
-
-            ax.annotate(
-                "",
-                xy=example_point,        # koniec na okręgu
-                xytext=C,    # początek
-                arrowprops=dict(arrowstyle="->", lw=2, color="darkorange"),
-                label = "Odległość przykładowej pozycji od nadajników"
-            )
-            ax.annotate(
-                "",
-                xy=Q,        # koniec na okręgu
-                xytext=example_point,    # początek
-                arrowprops=dict(arrowstyle="->", lw=2, color="red"),
-                label = "Różnica (błąd do optymalizacji)"
-            )
-                
-
-            ax.text(tx_x, tx_y + estimated_distance, f'{estimated_distance:.2f}m', 
-                    color='blue', fontsize=8, ha='center', va='bottom')
-            
-        else:
-            print(f"Warning: Transmitter ID {tx_id} not found in df_transmitters.")
-    
-    plt.scatter(*example_point, s=100, marker='^', color='orange',label='Przykładowy punkt')
-    plt.Circle((0, 0), 0, color='blue', fill=False, linestyle='--', alpha=0.7, 
-              label='Estimated Distance from RSSI')
-    legend_elements = [
-    Line2D([0], [0], color='darkorange', lw=2,
-           label="Odległość przykładowego punktu od nadajnika"),
-    plt.Circle((0, 0), 0, color='blue', fill=False, linestyle='--', alpha=0.7, 
-              label='Obliczona odległość od nadajnika z RSSI'),
-    Line2D([0], [0], color='red', lw=2,
-           label="Różnica (błąd do optymalizacji)"),
-]
-    handles, labels = ax.get_legend_handles_labels()
-    handles += legend_elements
-    ax.legend(handles=handles, loc='upper right')
-    
-    if not df_measurement.empty:
-        ax.set_title(f'Estymowane odległości dla przykładowego punktu')
-    else:
-        ax.set_title(f'Mapa z pozycją pomiaru {measurement_name} (No data)')
-    
-    return ax
 
 def plot_area_of_objective_function(X, Y, d, df_transmitters, value_func, 
                                     ax, func=None, w_flag=False):

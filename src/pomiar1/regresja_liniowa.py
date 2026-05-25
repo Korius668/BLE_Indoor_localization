@@ -29,7 +29,7 @@ if __name__ == "__main__":
     plt.savefig("docs/obrazy/regresja_liniowa.png")
     plt.show()
     
-    plt.figure(figsize=(10, 6))   
+    plt.figure(figsize=(5, 4))   
     distance_linear = np.power(10, X_log)
     plt.scatter(distance_linear, df_regression_data['znormalizowana moc sygnalu'], color='blue', label='Dane pomiarowe')
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     plt.xlabel('Dystans od nadajnika (m)')
     plt.ylabel('Moc sygnału (dBm)')
-    plt.title('Wykres regresji liniowej: Moc sygnału vs dystans')
+    plt.title('Regresja liniowa: Moc sygnału vs dystans')
 
     plt.legend()
     plt.savefig("docs/obrazy/regresja_liniowa2.png")

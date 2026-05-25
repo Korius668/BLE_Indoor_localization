@@ -17,29 +17,15 @@ WINDOW_WIDTH = timedelta(seconds=15)
 
 
 def plot_window_shape(df):
-    fig, ax = plt.subplots(figsize=(15, 10))
+    fig, ax = plt.subplots(figsize=(7, 5))
     distance = calculate_distance_from_rssi(df['znormalizowana moc sygnalu'])
     
     unique_ids = sorted(df['id nadajnika'].unique())
     
-    # Map each ID to a color
-    color_map = {uid: f'C{i % 10}' for i, uid in enumerate(unique_ids)}  # Cycle through default colors
-    
-    # Apply colors to the dataframe
-    colors = df['id nadajnika'].map(color_map)
-    time = (df['data'] - df['data'].min()).dt.total_seconds()
-    time_position = 20
-
-    # Plot bars with colors (time on x, signal on y)
-    ax.bar(time, distance, color=colors, width=0.1, alpha=0.5)
-    ax.axvline(x=time_position, color='red', linestyle='--', linewidth=2)
-
-    handles = [mpatches.Patch(color=color_map[uid], label=f'ID {uid}') for uid in unique_ids]
-
+    time_position = 17
     window_start = max(0.0, time_position - WINDOW_WIDTH.total_seconds())
-
     triangle = mpatches.Polygon(
-        [[window_start, 0.0], [time_position, 1.0], [time_position, 0.0]],
+        [[window_start, 0.0], [time_position, 0.66], [time_position, 0.0]],
         closed=True,
         color='orange',
         alpha=0.25,
@@ -47,22 +33,36 @@ def plot_window_shape(df):
         transform=ax.get_xaxis_transform()
     )
     ax.add_patch(triangle)
+    cmap = plt.cm.get_cmap("gnuplot2", len(unique_ids))
+
+    color_map = {uid: cmap(i) for i, uid in enumerate(unique_ids)}
+    # Apply colors to the dataframe
+    colors = df['id nadajnika'].map(color_map)
+    time = (df['data'] - df['data'].min()).dt.total_seconds()
+  
+
+    # Plot bars with colors (time on x, signal on y)
+    ax.bar(time, distance, color=colors, width=0.1, alpha=1)
+    ax.axvline(x=time_position, color='red', linestyle='--', linewidth=2, label='Moment pomiaru')
+
+    handles = [mpatches.Patch(color=color_map[uid], label=f'{uid}') for uid in unique_ids]   
+    handles.append(plt.Line2D([0], [0], color='red', linestyle='--', lw=2,  label='Moment czasowy'))
 
     ax.set_xlabel("Czas w sekundach")
     ax.set_ylabel("Odległość (obliczona z RSSI)")
 
-    handles.append(mpatches.Patch(color='orange', alpha=0.25, label='weight window'))
+    handles.append(mpatches.Patch(color='orange', alpha=0.25, label='Waga'))
     ax.legend(handles=handles, title='ID nadajnika')
-    ax.set_xlim(0, 22)
+    ax.set_xlim(0, 20)
+    ax.set_ylim(0, 50)
     ax.set_title(f"Kształt okna czasowego o szerokości {WINDOW_WIDTH.total_seconds()} sekund")
     ax.grid()
 
     ax2 = ax.twinx()
-    triangle_x = [window_start, time_position, time_position]
-    triangle_y = [0.0, 1.0, 0.0]
-    ax2.fill_between(triangle_x, triangle_y, color='orange', alpha=0.25)
     ax2.set_ylabel("Waga %")
-    ax2.set_ylim(0, 100)
+    ax2.set_ylim(0, 150)
+    ax2.set_yticks([0, 20, 40, 60, 80, 100])
+
     plt.show()
 
 if __name__ == "__main__":
