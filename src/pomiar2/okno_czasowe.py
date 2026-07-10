@@ -13,7 +13,7 @@ from ble_indoor_localization.estymatory.least_square import (calculate_distance_
 from .dystans_w_czasie import (WINDOW_STEP, WINDOW_WIDTH,
                                     df,
                                       )
-WINDOW_WIDTH = timedelta(seconds=15)
+WINDOW_WIDTH = timedelta(seconds=3)
 
 
 def plot_window_shape(df):
@@ -43,17 +43,17 @@ def plot_window_shape(df):
 
     # Plot bars with colors (time on x, signal on y)
     ax.bar(time, distance, color=colors, width=0.1, alpha=1)
-    ax.axvline(x=time_position, color='red', linestyle='--', linewidth=2, label='Moment pomiaru')
+    ax.axvline(x=time_position, color='red', linestyle='--', linewidth=2, label='Aktualny czas')
 
     handles = [mpatches.Patch(color=color_map[uid], label=f'{uid}') for uid in unique_ids]   
-    handles.append(plt.Line2D([0], [0], color='red', linestyle='--', lw=2,  label='Moment czasowy'))
+    handles.append(plt.Line2D([0], [0], color='red', linestyle='--', lw=2,  label='Aktualny czas'))
 
     ax.set_xlabel("Czas w sekundach")
     ax.set_ylabel("Odległość (obliczona z RSSI)")
 
     handles.append(mpatches.Patch(color='orange', alpha=0.25, label='Waga'))
     ax.legend(handles=handles, title='ID nadajnika')
-    ax.set_xlim(0, 20)
+    ax.set_xlim(12, 20)
     ax.set_ylim(0, 50)
     ax.set_title(f"Kształt okna czasowego o szerokości {WINDOW_WIDTH.total_seconds()} sekund")
     ax.grid()
