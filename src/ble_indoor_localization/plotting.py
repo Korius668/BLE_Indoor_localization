@@ -128,48 +128,63 @@ def _add_legend_with_arrows(ax):
 def plot_measurement_positions(
     df_positions,
     ax=None,
-    active_position=None,
-    part_position=None
+    draw_arrows=False
 ):
-    """Plot measurement positions (simple version without highlighting).
-    
-    Parameters:
-    -----------
-    df_positions : pd.DataFrame
-        DataFrame with position data (x, y columns)
-    ax : matplotlib.axes.Axes, optional
-        Axes to plot on. If None, creates new figure
-    active_position : int, optional
-        Unused in simple version, kept for API compatibility
-    part_position : float, optional
-        Unused in simple version, kept for API compatibility
-        
-    Returns:
-    --------
-    tuple
-        (ax, None, None) - simple version doesn't track active position
-    """
+    """Plot measurement positions with optional arrows bridging over missing values."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 8))
     
-    # Filter valid positions (not NaN)
-    valid_positions = df_positions.dropna(subset=['x', 'y'])
+    # Zachowujemy oryginalny numer pozycji (indeks + 1) i usuwamy NaN
+    df_valid = df_positions.copy()
+    df_valid['orig_num'] = df_valid.index + 1
+    df_valid = df_valid.dropna(subset=['x', 'y'])
     
-    if not valid_positions.empty:
-        ax.scatter(valid_positions['x'], valid_positions['y'],
-                  color='red', s=50, label='Pozycje')
+    if not df_valid.empty:
+        positions_list = list(df_valid.iterrows())
         
-        for idx, row in valid_positions.iterrows():
-            x_val = float(row['x'])
-            y_val = float(row['y'])
-            ax.text(x_val, y_val, str(int(idx) + 1), color='white',
-                   fontsize=8, ha='center', va='center')
-    
+        for i in range(len(positions_list)):
+            _, row = positions_list[i]
+            x_val, y_val = float(row['x']), float(row['y'])
+            orig_num = int(row['orig_num'])
+            
+            # 1. Rysujemy punkt (kropkę) i biały numer w środku
+            ax.scatter(x_val, y_val, color='red', s=150, zorder=3)
+            ax.text(x_val, y_val, str(orig_num), color='white',
+                    fontsize=9, ha='center', va='center', weight='bold', zorder=4)
+            
+            # 2. Rysujemy strzałki tylko wtedy, gdy flaga draw_arrows jest włączona
+            if draw_arrows and (i < len(positions_list) - 1):
+                _, row_next = positions_list[i+1]
+                x_next, y_next = float(row_next['x']), float(row_next['y'])
+                
+                # Rysowanie strzałki
+                ax.annotate(
+                    '', 
+                    xy=(x_next, y_next), 
+                    xytext=(x_val, y_val),
+                    arrowprops=dict(
+                        arrowstyle="->", 
+                        color="red", 
+                        lw=3, 
+                        mutation_scale=20
+                    ),
+                    zorder=2
+                )
+                
+                # Numer na strzałce tożsamy z numerem pozycji startowej
+                x_mid = (x_val + x_next) / 2
+                y_mid = (y_val + y_next) / 2
+                ax.text(x_mid, y_mid, str(orig_num), color='black',
+                        fontsize=9, ha='center', va='center', weight='bold',
+                        bbox=dict(boxstyle='circle,pad=0.2', fc='white', ec='none', alpha=0.7))
+        
+        # Dodajemy niewidzialny wykres pod legendę
+        ax.scatter([], [], color='red', s=150, label='Pozycje')
+
     _configure_position_plot(ax)
     ax.legend(loc='upper right')
     
     return ax, None, None
-
 
 def save_probki_w_czasie_plot(df, window_width, window_step, save_path='wykresy/probki_w_czasie.png'):
     fig, ax = plt.subplots()

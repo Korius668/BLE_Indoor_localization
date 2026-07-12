@@ -55,7 +55,7 @@ def plot_transmitters_on_map(ax=None, background=background, df_transmitters=df_
         fig, ax = plt.subplots(figsize=(4, 6))
     ax = plot_map(background=background, df_transmitters=df_transmitters, reference_points=reference_points)
     for i, row in df_transmitters.iterrows():
-        ax.text(row['x'], row['y'], str(row['Id']), color='white', fontsize=8, ha='center', va='center') 
+        ax.text(row['x'], row['y'], str(int(row['Id'])), color='white', fontsize=8, ha='center', va='center') 
 
     ax.set_title('Mapa z zaznaczonymi nadajnikami')
     ax.set_xlabel('Oś X (m)')
