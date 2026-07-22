@@ -9,7 +9,6 @@ from .calculations import (calculate_distance_from_rssi,
                            create_rssi_distance_model,
                            distance_between_2_points, generate_samples,
                            objective_function,
-                           objective_function_normalized,
                            prepare_distance_data, value_of_objective_function)
 from .estymatory import (D2LSEstimator,DLSEstimator, EKFLocalizer, Estimator, MLEstimator, D2LSDEstimator,
 least_square_estimation, foggy_wrapper)

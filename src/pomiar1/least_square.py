@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ble_indoor_localization import (
-    objective_function, 
     calculate_distance_from_rssi,  
     prepare_distance_data,
     generate_samples,
     plot_distance_from_signal,
-    plot_average_positions
+    plot_average_positions,
+    value_of_objective_function,
+    objective_function
 )
 
 from pomiar import df_transmitters, plot_map
@@ -91,7 +92,7 @@ def calculate_average_positions(calc_data):
     return average_pos[0], average_pos[1]
 
 
-def plot_area_of_function(X,Y,calc_data,ax =None):
+def plot_area_of_function(X,Y,calc_data,ax =None, distance_factor=1.0):
     if ax is None:
         ax = plot_map(ax)
     
@@ -102,24 +103,14 @@ def plot_area_of_function(X,Y,calc_data,ax =None):
         for k in range(X.shape[1]): 
 
             d_input = rssi_distances
-            
-            Z[j, k] =np.sum(objective_function(
-                (X[j, k], Y[j, k]), 
-                beacons_coords, 
-                d_input
-                # weights=weights
-            ))
-    contour = plt.contourf(X, Y, Z, levels=100,alpha=0.5, cmap='viridis')
+            Z[j,k]=value_of_objective_function(X[j, k], Y[j, k],beacons_coords,d_input,weights, func=lambda position, beacons, distances_from_rssi, weights: objective_function(position, beacons, distances_from_rssi, weights, distance_factor=distance_factor))
+    contour = ax.contourf(X, Y, Z, levels=100,alpha=0.5, cmap='viridis')
     max_idx = np.argmin(Z)
     max_coord = np.unravel_index(max_idx, Z.shape)
     max_x = X[max_coord]
     max_y = Y[max_coord]
-
-
-
-    plt.colorbar(contour, label="Wartość funkcji celu")
     
-    ax.scatter(max_x, max_y, c='cyan', s=120, marker='X', label=f'Minimum funkcji {max_x:0.2f}, {max_y:0.2f}')
+    ax.scatter(max_x, max_y, c='cyan', s=340, marker='X', label=f'Minimum funkcji {max_x:0.2f}, {max_y:0.2f}')
     return ax
 
 
@@ -152,34 +143,74 @@ def plot_estimated_positions(
     )
     
     return ax
-    
-if __name__ == "__main__":
+
+def plot_two_areas():
+    measurement_num=2
     x_range = np.linspace(-20, 20,100)
     y_range = np.linspace(-10, 42, 100)
+    func = lambda rssi: calculate_distance_from_rssi(rssi, model)
     
     X, Y = np.meshgrid(x_range, y_range)
-    cnt = 50
-    samples = generate_samples(calc_data,cnt)
-    estimated_positions_per_measurement = calculate_monte_carlo_positions(samples, cnt=cnt)
-    for measurement_num, estimated_positions in estimated_positions_per_measurement.items():
-        fig, ax = plt.subplots(figsize=(10, 10))
-        ax = plot_map(ax)
-        ax= plot_area_of_function(X,Y,calc_data=calc_data[measurement_num],ax=ax)
-        # ax = plot_estimated_positions(
-        #     measurement_num,
-        #     estimated_positions,
-        #     ax=ax            
-        # )
-        func = lambda rssi: calculate_distance_from_rssi(rssi,model)
-        ax = plot_distance_from_signal(measurement_num, dfs[measurement_num],df_transmitters,func,  ax)
-        # avg_x, avg_y = calculate_average_positions(calc_data=calc_data[measurement_num])
-        # ax = plot_average_positions(avg_x,avg_y, ax=ax)
-       
-        ax.set_xlabel('Oś X (m)')
-        ax.set_ylabel('Oś Y (m)')
-        ax.set_aspect('equal', adjustable='box')
-        ax.set_ylim(-10, 42)
-        ax.set_xlim(-20, 20)
-        ax.legend(loc='upper right')
-        plt.savefig(f"docs/obrazy/least_squares_estymacja_pozycji_{measurement_num}.png")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    ax1 = plot_map(ax1)
+    ax1 = plot_area_of_function(X, Y, calc_data=calc_data[measurement_num], ax=ax1, distance_factor=0)
+    ax1 = plot_distance_from_signal(measurement_num, dfs[measurement_num], df_transmitters, func, ax1)
+
+    ax1.set_aspect('equal', adjustable='box')
+    ax1.set_ylim(-1, 25)
+    ax1.set_xlim(-10, 15)
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+
+    ax2 = plot_map(ax2)
+    ax2 = plot_area_of_function(X, Y, calc_data=calc_data[measurement_num], ax=ax2, distance_factor=1)
+
+    ax2 = plot_distance_from_signal(measurement_num, dfs[measurement_num], df_transmitters, func, ax2)
+    
+    ax2.set_aspect('equal', adjustable='box')
+    ax2.set_ylim(-1, 25)
+    ax2.set_xlim(-10, 15)
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+    ax2.legend(loc='upper left')
+
+
+
+    plt.savefig(f"docs/obrazy/least_squares_estymacja_pozycji_{measurement_num}.png")
     plt.show()
+    
+if __name__ == "__main__":
+    # x_range = np.linspace(-20, 20,100)
+    # y_range = np.linspace(-10, 42, 100)
+    
+    # X, Y = np.meshgrid(x_range, y_range)
+    # cnt = 50
+    # samples = generate_samples(calc_data,cnt)
+    # estimated_positions_per_measurement = calculate_monte_carlo_positions(samples, cnt=cnt)
+    # for measurement_num, estimated_positions in estimated_positions_per_measurement.items():
+    #     if measurement_num not in [1]:
+    #         continue
+    #     fig, ax = plt.subplots(figsize=(10, 10))
+    #     ax = plot_map(ax)
+    #     # ax = plot_estimated_positions(
+    #     #     measurement_num,
+    #     #     estimated_positions,
+    #     #     ax=ax            
+    #     # )
+    #     ax= plot_area_of_function(X,Y,calc_data=calc_data[measurement_num],ax=ax, distance_factor=0)
+    #     func = lambda rssi: calculate_distance_from_rssi(rssi,model)
+    #     ax = plot_distance_from_signal(measurement_num, dfs[measurement_num],df_transmitters,func,  ax)
+    #     # avg_x, avg_y = calculate_average_positions(calc_data=calc_data[measurement_num])
+    #     # ax = plot_average_positions(avg_x,avg_y, ax=ax)
+       
+    #     ax.set_xlabel('Oś X (m)')
+    #     ax.set_ylabel('Oś Y (m)')
+    #     ax.set_aspect('equal', adjustable='box')
+    #     ax.set_ylim(-1, 25)
+    #     ax.set_xlim(-10, 15)
+    #     ax.set_xticks([])
+    #     ax.set_yticks([])
+    #     ax.legend(loc='upper left')
+    #     plt.savefig(f"docs/obrazy/least_squares_estymacja_pozycji_{measurement_num}.png")
+    # plt.show()
+    plot_two_areas()

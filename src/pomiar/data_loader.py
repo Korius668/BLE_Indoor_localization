@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from .mapa_nadajniki import df_transmitters
 
-from ble_indoor_localization.calculations import calculate_euclidean_distance
+from ble_indoor_localization.calculations import distance_between_2_points
 
 id_mapping = {
     ' 00:00:00:00:00:01': '1',
@@ -21,7 +21,7 @@ id_mapping = {
 
 transmitter_order = list(id_mapping.values())
 
-def read_pomiar_data(file_paths, df_positions, df_transmitters):
+def read_pomiar_data(file_paths, df_positions, df_transmitters=df_transmitters):
     """
     Read measurement data from multiple files and process it.
     
@@ -67,7 +67,7 @@ def read_pomiar_data(file_paths, df_positions, df_transmitters):
         )
 
         df_temp_merged['distance'] = df_temp_merged.apply(
-            lambda row: calculate_euclidean_distance(
+            lambda row: distance_between_2_points(
                 row['x'], row['y'], row['x_tx'], row['y_tx']
             ),
             axis=1
@@ -158,4 +158,3 @@ __all__ = [
     'calc_boxplot_data'
 ]
 
-# Made with Bob

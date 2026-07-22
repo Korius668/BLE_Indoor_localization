@@ -1,10 +1,8 @@
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
-from matplotlib.patches import Wedge
-import matplotlib.cm as cm
-
 import numpy as np
 import pandas as pd
+
 from .calculations import prepare_distance_data
 
 def plot_active_measurement_position(df_positions,
@@ -210,7 +208,7 @@ def save_probki_w_czasie_plot(df, window_width, window_step, save_path='wykresy/
 
 
 def plot_signal_strength_map(df_measurement, df_transmitters, 
-                             ax, fig=None, c_flag=True, real_plot=True):
+                             ax, fig=None, c_flag=True, legend=True, real_plot=True):
     """
     Plot signal strength map with transmitter positions.
     
@@ -270,7 +268,7 @@ def plot_signal_strength_map(df_measurement, df_transmitters,
         cbar.set_label('Srednia moc sygnału (dBm)')
     
     representative_size = transmitter_stats['sample_count'].median() * 0.5 if not transmitter_stats.empty else 50
-    label = 'Nadajniki (rozmiar ~ liczba probek)'
+    label = 'Nadajniki\n(rozmiar ~ liczba probek)'
     proxy_transmitter = ax.scatter([], [], color='green', s=representative_size, label=label)
     
     handles, labels = ax.get_legend_handles_labels()
@@ -281,14 +279,14 @@ def plot_signal_strength_map(df_measurement, df_transmitters,
     if label not in valid_labels:
         valid_handles.append(proxy_transmitter)
         valid_labels.append(label)
-    
-    ax.legend(valid_handles, valid_labels, loc='upper right')
+    if legend:
+        ax.legend(valid_handles, valid_labels, loc='upper right')
     
     return ax
 
 
 def plot_distance_from_signal(measurement_name, df_measurement, df_transmitters,
-                              calculate_distance_func, ax, fig=None, c_flag=True):
+                              calculate_distance_func, ax, fig=None, c_flag=False, circ_flag=True):
     """
     Plot estimated distances from signal strength.
     
@@ -306,7 +304,7 @@ def plot_distance_from_signal(measurement_name, df_measurement, df_transmitters,
         Axes to plot on
     fig : matplotlib.figure.Figure, optional
         Figure for plotting
-    c_flag : bool
+    circ_flag : bool
         Whether to show distance circles
         
     Returns:
@@ -334,7 +332,7 @@ def plot_distance_from_signal(measurement_name, df_measurement, df_transmitters,
             tx_y = transmitter_coords['y']
             
             estimated_distance = calculate_distance_func(avg_signal)
-            if c_flag:
+            if circ_flag:
                 circle = plt.Circle((tx_x, tx_y), estimated_distance, color='blue', 
                                    fill=False, linestyle='--', alpha=0.7, label=None)
                 ax.add_patch(circle)
@@ -354,8 +352,6 @@ def plot_distance_from_signal(measurement_name, df_measurement, df_transmitters,
         ax.set_title(f'Mapa z pozycją pomiaru {measurement_name} (No data)')
     
     return ax
-
-
 
 
 def plot_area_of_objective_function(X, Y, d, df_transmitters, value_func, 

@@ -1,3 +1,4 @@
+
 from tqdm import tqdm
 from matplotlib.lines import Line2D
 import numpy as np
@@ -5,25 +6,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from ble_indoor_localization import (
-    calculate_distance_from_rssi, 
-    plot_signal_strength_map    
-)
+    plot_signal_strength_map,
+    plot_distance_from_signal,
+    calculate_distance_from_rssi
+    )
 from pomiar import df_transmitters, plot_map
 
 from .boxplot import dfs
 from .regresja_liniowa import model
 
 
-def plot_example_distance_from_signal(measurement_name, df_measurement, df_transmitters,
-                            ax, fig=None):    
+def plot_example_distance_from_signal(ax = None, fig=None):    
+    df_measurement =  dfs[1]
     transmitter_stats = df_measurement.groupby('id nadajnika')['znormalizowana moc sygnalu'].agg(['mean', 'count']).reset_index()
     transmitter_stats = transmitter_stats.rename(columns={'mean': 'average_signal_strength', 'count': 'sample_count'})
     
     if not fig:
-        fig = plt.gcf()
+        fig = plt.figure(figsize=(7, 5))
+    if not ax:
+        ax = plot_map()
     df_transmitters2 = df_transmitters[df_transmitters['Id'].isin((1, 2, 3, 4, 5, 6,7,8))]
+    
     ax = plot_signal_strength_map(df_measurement, df_transmitters2, 
                                 fig=fig, ax=ax, real_plot=False)
+    
     example_point = np.array([-2, 10])
     
     distances = [3.16, 5.0, 8.0,3 ,5 , 7.07, 4.24, 6.32]
@@ -80,11 +86,14 @@ def plot_example_distance_from_signal(measurement_name, df_measurement, df_trans
 ]
     handles, labels = ax.get_legend_handles_labels()
     handles += legend_elements
-    ax.legend(handles=handles, loc='upper right')
+    ax.legend(handles=handles, loc='lower right')
     
     
     ax.set_title(f'Róźnice między odległościami')
-    
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_ylim(-2, 18)
+    ax.set_xlim(-7, 22)
     return ax
 
 def plot_example_real_vs_calculated(measurement_name, ax, fig=None):    
@@ -138,17 +147,30 @@ def plot_example_real_vs_calculated(measurement_name, ax, fig=None):
     
     return ax
 
-if __name__ == "__main__":
+def plot_pozycje():
     for measurement_name, df_measurement in tqdm(dfs.items()):
-        if measurement_name > 1:
-            break
-        fig, ax = plt.subplots(figsize=(5, 5))
-        # ax= plot_map()
-        # func = lambda rssi: calculate_distance_from_rssi(rssi, model)
-        # plot_example_distance_from_signal(measurement_name, df_measurement, df_transmitters, ax=ax,)
-        plot_example_real_vs_calculated("Błąd estymacji", ax=ax)
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax= plot_map()
+        func = lambda rssi: calculate_distance_from_rssi(rssi, model)
+        plot_distance_from_signal(measurement_name, df_measurement, df_transmitters, func, ax=ax)
+        
+        
         ax.set_ylim(4, 8)
         ax.set_xlim(-4, 4)
         ax.set_xlabel('Oś X (m)')
         ax.set_ylabel('Oś Y (m)')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        dist = Line2D([0], [0], linestyle='--' , color='blue', lw=2)
+        plt.legend(handles=[dist],
+           labels=['odleglość obliczona z RSSI'],
+           ncol=1,
+           frameon=True)
+        plt.xlim(-20, 20)
+        plt.ylim(-10, 40)
+        plt.savefig(f"docs/obrazy3/odleglosci_pozycja_{measurement_name}.png")
+
+if __name__ == "__main__":
+    # plot_pozycje()
+    plot_example_distance_from_signal()
     plt.show()

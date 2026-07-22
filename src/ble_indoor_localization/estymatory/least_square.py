@@ -1,9 +1,10 @@
-from typing import Any
 import numpy as np
 from scipy.optimize import least_squares
 from joblib import Memory
+
+from ..calculations import objective_function
+
 memory = Memory("./cache", verbose=0)
-from ..calculations import calculate_distance_from_rssi, distance_between_2_points, objective_function, objective_function_normalized
 
 
 COEF = -15.15626911
@@ -18,26 +19,6 @@ def calculate_distance_from_rssi(signal_strength):
     distance = np.power(10 ,log_distance)
     return distance
     
-
-def distance_between_2_points(x1, y1, x2, y2):
-    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-
-
-def objective_function(position, beacons, distances_from_rssi, weights=None, distance_factor=1.0):
-    x, y = position
-    geometrical_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
-    residuals =0
-    if weights is None:
-        residuals = geometrical_distances - distances_from_rssi
-    else:        
-        residuals = weights*(geometrical_distances - distances_from_rssi)
-    if distance_factor == 0:
-        return residuals
-    elif distance_factor == 1:
-        return residuals/distances_from_rssi
-    else:
-        return residuals/(distances_from_rssi**distance_factor)
-
 
 @memory.cache
 def preprocess_inputs(df, df_transmitters):
@@ -95,11 +76,3 @@ def least_square_estimation(df,df_transmitters, bounds=None, func=objective_func
     return x, y
 
 
-def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objective_function):
-    result = 0.5*np.sum(func(
-                (x,y), 
-                beacons_coords, 
-                d_input,
-                weights=weights
-            )**2)
-    return result

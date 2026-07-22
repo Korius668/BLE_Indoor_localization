@@ -33,11 +33,12 @@ def plot_window_shape(df):
         transform=ax.get_xaxis_transform()
     )
     ax.add_patch(triangle)
-    cmap = plt.cm.get_cmap("gnuplot2", len(unique_ids))
+    cmap = plt.get_cmap("gnuplot2", len(unique_ids)+1)
 
     color_map = {uid: cmap(i) for i, uid in enumerate(unique_ids)}
     # Apply colors to the dataframe
     colors = df['id nadajnika'].map(color_map)
+    colors[12] = cmap(13)  # Ensure the color for id 12 is set correctly
     time = (df['data'] - df['data'].min()).dt.total_seconds()
   
 

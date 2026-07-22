@@ -31,7 +31,7 @@ if __name__ == "__main__":
     
     plt.figure(figsize=(5, 4))   
     distance_linear = np.power(10, X_log)
-    plt.scatter(distance_linear, df_regression_data['znormalizowana moc sygnalu'], color='blue', label='Dane pomiarowe')
+    plt.scatter(distance_linear, df_regression_data['znormalizowana moc sygnalu'],alpha=0.2, s=5, color='blue', label='Dane pomiarowe')
 
     distance_range_linear = np.linspace(distance_linear.min(), distance_linear.max(), 100)
     log_distance_range = np.log10(distance_range_linear).reshape(-1, 1)

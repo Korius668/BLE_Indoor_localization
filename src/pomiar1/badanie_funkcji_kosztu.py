@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.optimize import least_squares
 
 from ble_indoor_localization import (
     plot_distance_from_signal, 
@@ -9,8 +8,7 @@ from ble_indoor_localization import (
     generate_samples, 
     distance_between_2_points, 
     prepare_distance_data,
-    objective_function, 
-    objective_function_normalized
+    objective_function
     )
 from pomiar import df_transmitters, plot_map
 
@@ -21,7 +19,6 @@ from .boxplot import (
     df_positions
     )
 from .least_square import least_square_estimation
-
 
 
 def calculate_monte_carlo_positions(
@@ -176,9 +173,8 @@ if __name__ == "__main__":
     cnt = 50
     samples = generate_samples(cnt)
     estimated_positions_1 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function)
-    estimated_positions_2 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function_normalized)
     estimated_positions_3 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function,  w_flag=True)
-    estimated_positions_4 = calculate_monte_carlo_positions(samples, cnt=cnt,func=objective_function_normalized,  w_flag=True) 
+
     
     methods_config = [
     {
@@ -189,26 +185,13 @@ if __name__ == "__main__":
         "w_flag": False
     },
     {
-        "method": "Dzielona przez odległość od rssi",
-        "subplot": 2,
-        "func": objective_function_normalized,
-        "estimated_positions": estimated_positions_2,
-        "w_flag": False
-    },
-    {
         "method": "Zwykla z wagami",
         "subplot": 3,
         "func": objective_function,
         "estimated_positions": estimated_positions_3,
         "w_flag": True
-    },
-    {
-        "method": "Dzielona przez odległość od rssi z wagami",
-        "subplot": 4,
-        "func": objective_function_normalized,
-        "estimated_positions": estimated_positions_4,
-        "w_flag": True
-    }]
+    }
+    ]
     output_file = "tabela/estymacja_pozycji.csv"
 
 

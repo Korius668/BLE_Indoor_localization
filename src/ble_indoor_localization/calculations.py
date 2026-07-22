@@ -1,12 +1,25 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
-import math
 
 
-def calculate_euclidean_distance(x1, y1, x2, y2):
+def distance_between_2_points(x1, y1, x2, y2):
     """Calculate Euclidean distance between two points."""
-    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
+def objective_function(position, beacons, distances_from_rssi, weights=None, distance_factor=1.0):
+    x, y = position
+    geometrical_distances = distance_between_2_points(x,y,beacons[:, 0],beacons[:, 1])
+    residuals =0
+    if weights is None:
+        residuals = geometrical_distances - distances_from_rssi
+    else:        
+        residuals = weights*(geometrical_distances - distances_from_rssi)
+    if distance_factor == 0:
+        return residuals
+    elif distance_factor == 1:
+        return residuals/distances_from_rssi
+    else:
+        return residuals/(distances_from_rssi**distance_factor)
 
 def distance_between_2_points(x1, y1, x2, y2):
     """
@@ -74,69 +87,6 @@ def calculate_distance_from_rssi(signal_strength, model):
     distance = np.power(10, log_distance)
     return distance
 
-
-def objective_function(position, beacons, distances_from_rssi, weights=None):
-    """
-    Objective function for least squares optimization.
-    
-    Parameters:
-    -----------
-    position : array-like
-        [x, y] coordinates to evaluate
-    beacons : array-like
-        Nx2 array of beacon coordinates
-    distances_from_rssi : array-like
-        Distances estimated from RSSI
-    weights : array-like, optional
-        Weights for each beacon
-        
-    Returns:
-    --------
-    array-like
-        Residuals
-    """
-    x, y = position
-    geometrical_distances = distance_between_2_points(x, y, beacons[:, 0], beacons[:, 1])
-    residuals = geometrical_distances - distances_from_rssi
-    
-    if weights is not None:
-        residuals = weights * residuals
-    
-    return np.abs(residuals)
-
-
-def objective_function_normalized(position, beacons, distances_from_rssi, weights=None):
-    """
-    Normalized objective function (divided by distance from RSSI).
-    
-    Parameters:
-    -----------
-    position : array-like
-        [x, y] coordinates to evaluate
-    beacons : array-like
-        Nx2 array of beacon coordinates
-    distances_from_rssi : array-like
-        Distances estimated from RSSI
-    weights : array-like, optional
-        Weights for each beacon
-        
-    Returns:
-    --------
-    array-like
-        Normalized residuals
-    """
-    x, y = position
-    geometrical_distances = distance_between_2_points(x, y, beacons[:, 0], beacons[:, 1])
-    residuals = geometrical_distances - distances_from_rssi
-    
-    if weights is not None:
-        residuals = weights * residuals
-    else:        
-        residuals = weights*(geometrical_distances - distances_from_rssi)
-
-    return residuals / distances_from_rssi
-
-
 def prepare_distance_data(calc_data, df_transmitters):
     """
     Prepare beacon coordinates, distances, and weights from calculation data.
@@ -163,11 +113,9 @@ def prepare_distance_data(calc_data, df_transmitters):
         if not np.isnan(b['count']):
             transmitter_row = df_transmitters[df_transmitters['Id'] == j+1].iloc[0]
             beacons_coords_list.append([transmitter_row['x'], transmitter_row['y']])
-            # Note: This requires the model to be passed or stored globally
-            # For now, keeping the function signature but noting this dependency
+
             weights.append(b['count'])
-            rssi_distances.append(b['avg'])  # Will need conversion via model
-    
+            rssi_distances.append(b['avg'])
     if not weights or np.sum(weights) == 0:
         return np.nan, np.nan, np.nan
     
@@ -177,40 +125,14 @@ def prepare_distance_data(calc_data, df_transmitters):
     
     return beacons_coords, np.array(rssi_distances), weights
 
-
-def value_of_objective_function(x, y, beacons_coords, d_input, weights, func=None):
-    """
-    Calculate the value of the objective function at a specific point.
-    
-    Parameters:
-    -----------
-    x, y : float
-        Coordinates to evaluate
-    beacons_coords : array-like
-        Nx2 array of beacon coordinates
-    d_input : array-like
-        Distances from RSSI
-    weights : array-like
-        Weights for each beacon
-    func : callable, optional
-        Objective function to use
-        
-    Returns:
-    --------
-    float
-        Value of objective function
-    """
-    if func is None:
-        func = objective_function
-    
-    result = 0.5 * np.sum(func(
-        (x, y), 
-        beacons_coords, 
-        d_input,
-        weights=weights
-    )**2)
+def value_of_objective_function(x, y, beacons_coords,d_input,weights, func=objective_function):
+    result = 0.5*np.sum(func(
+                (x,y), 
+                beacons_coords, 
+                d_input,
+                weights=weights
+            )**2)
     return result
-
 
 def generate_samples(calc_data, n_samples=10000, sigma=7):
     """
